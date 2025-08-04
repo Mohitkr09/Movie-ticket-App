@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #F84565;
+  --color-primary-dull: #D63854;
+}
+
+* {
+  font-family: "Roboto", sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: #787777 #1e1e1e;
+}
+
+/* Optional for more cross-browser scrollbar styling */
+*::-webkit-scrollbar {
+  width: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: #787777;
+  border-radius: 10px;
+}
+
+body {
+  color: white;
+  background-color:#09090B;
+}
+.no-scrollbar{
+  scrollbar-width:none;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button{
+  -webkit-appearence:none;
+}
+::-webkit-calendar-picker-indicator{
+  filter:invert(1);
+}
+
