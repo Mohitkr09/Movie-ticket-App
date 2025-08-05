@@ -8,11 +8,11 @@ import {inngest,functions} from './inngest/index.js'
 
 const app = express();
 const port = 3000;
-await connectDB()
+await connectDB();
 
-app.use(express.json())
-app.use(cors())
-app.use(clerkMiddleware())
+app.use(express.json());
+app.use(cors());
+app.use(clerkMiddleware());
 
 
 app.get('/',(req,res)=> res.send('Server is Live!'))
