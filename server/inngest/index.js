@@ -4,6 +4,7 @@ import Booking from "../models/Booking.js";
 import Show from "../models/Show.js";
 import sendEmail from "../configs/nodemailer.js";
 
+
 export const inngest = new Inngest({ id: "movie-ticket-booking" });
 
 const syncUserCreation = inngest.createFunction(
