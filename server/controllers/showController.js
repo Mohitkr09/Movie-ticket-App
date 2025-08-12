@@ -1,6 +1,7 @@
 import axios from 'axios'
 import Movie from '../models/Movie.js'
 import Show from '../models/Show.js'
+import { inngest } from '../inngest/index.js'
 export const getNowPlayingMovies = async (req,res) =>{
   try{
    const {data}= await axios.get('https://api.themoviedb.org/3/movie/now_playing',{
@@ -22,11 +23,9 @@ export const addShow = async (req, res) => {
       return res.status(400).json({ success: false, message: "movieId (TMDB ID) is required" })
     }
 
-    // Try to find movie in DB by _id field which is TMDB movieId string
     let movie = await Movie.findById(movieId)
 
     if (!movie) {
-      // Fetch from TMDB API if not in DB
       const [movieDetailsResponse, movieCreditsResponse] = await Promise.all([
         axios.get(`https://api.themoviedb.org/3/movie/${movieId}`, {
       headers:{Authorization:`Bearer ${process.env.TMDB_API_KEY}`}
@@ -75,6 +74,11 @@ export const addShow = async (req, res) => {
     if (showsToCreate.length > 0) {
       await Show.insertMany(showsToCreate)
     }
+
+    await inngest.send({
+      name:"app/show.added",
+      data: {movieTitle:movie.title}
+    })
 
     res.json({ success: true, message: 'Show(s) added successfully.' })
   } catch (error) {
