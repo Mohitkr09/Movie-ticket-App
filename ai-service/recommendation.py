@@ -17,30 +17,32 @@ if not TMDB_API_KEY:
 app = Flask(__name__)
 CORS(app)
 
-def fetch_movies():
-    url = "https://api.themoviedb.org/3/movie/popular"
-    headers = {"Authorization": f"Bearer {TMDB_API_KEY}"}
-    params = {"language": "en-US", "page": 1}
-
-    response = requests.get(url, headers=headers, params=params)
-    response.raise_for_status()  # Raises an error for bad status codes
-    data = response.json()
-
+def fetch_movies(pages=5):
+    """Fetch movies from TMDB (multiple pages for larger dataset)."""
     movies = []
-    for m in data.get("results", []):
-        movies.append({
-            "id": m["id"],
-            "title": m["title"],
-            "genres": " ".join([str(g) for g in m.get("genre_ids", [])]),
-            "overview": m.get("overview", "")
-        })
+    for page in range(1, pages + 1):
+        url = "https://api.themoviedb.org/3/movie/popular"
+        headers = {"Authorization": f"Bearer {TMDB_API_KEY}"}
+        params = {"language": "en-US", "page": page}
 
-    df = pd.DataFrame(movies)
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        for m in data.get("results", []):
+            movies.append({
+                "id": m["id"],
+                "title": m["title"],
+                "genres": " ".join([str(g) for g in m.get("genre_ids", [])]),
+                "overview": m.get("overview", "")
+            })
+
+    df = pd.DataFrame(movies).drop_duplicates(subset="id", keep="first")
     df["features"] = df["genres"] + " " + df["overview"]
     return df
 
 # Initialize movie data and similarity matrix
-movies = fetch_movies()
+movies = fetch_movies(pages=5)  # ✅ fetch 5 pages (~100 movies)
 tfidf = TfidfVectorizer(stop_words="english")
 tfidf_matrix = tfidf.fit_transform(movies["features"])
 cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
@@ -54,7 +56,6 @@ def recommend():
 
     movie_id = data["movie_id"]
 
-    # TMDB movie ids are integers, so convert if needed
     try:
         movie_id = int(movie_id)
     except (ValueError, TypeError):
@@ -71,7 +72,7 @@ def recommend():
     for i in sim_scores:
         rec_id = int(movies.iloc[i[0]]["id"])
 
-        # Fetch full details from TMDb API
+        # Fetch full details from TMDB API
         details_url = f"https://api.themoviedb.org/3/movie/{rec_id}"
         headers = {"Authorization": f"Bearer {TMDB_API_KEY}"}
         res = requests.get(details_url, headers=headers)
@@ -99,3 +100,4 @@ def recommend():
 
 if __name__ == "__main__":
     app.run(port=5000, debug=True)
+

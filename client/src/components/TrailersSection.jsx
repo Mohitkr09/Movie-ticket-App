@@ -1,25 +1,50 @@
-import React, { useState } from 'react';
-import { dummyTrailers } from '../assets/assets';
-import BlurCircle from './BlurCircle';
-import ReactPlayer from 'react-player';
-import { PlayCircleIcon } from 'lucide-react';
+import React, { useEffect, useState } from 'react'
+import ReactPlayer from 'react-player'
+import { X } from 'lucide-react'
 
-const TrailersSection = () => {
-  const [currentTrailer, setCurrentTrailer] = useState(dummyTrailers[0]);
+const TrailersSection = ({ movie, onClose }) => {
+  const [trailers, setTrailers] = useState([])
+  const [currentTrailer, setCurrentTrailer] = useState(null)
+
+  useEffect(() => {
+    const fetchTrailers = async () => {
+      try {
+        if (!movie?._id) return
+
+        const res = await fetch(`/api/show/${movie._id}/videos`)
+        const data = await res.json()
+
+        if (data.success && data.trailers.length > 0) {
+          setTrailers(data.trailers)
+          setCurrentTrailer(data.trailers[0]) // first trailer as default
+        }
+      } catch (error) {
+        console.error('Error fetching trailers:', error)
+      }
+    }
+
+    fetchTrailers()
+  }, [movie])
+
+  if (!currentTrailer) return null
 
   return (
-    <div className="px-6 md:px-16 lg:px-24 xl:px-44 py-20 overflow-hidden">
-      {/* Section title */}
-      <p className="text-gray-300 font-medium text-lg max-w-[960px] mx-auto">
-        Trailers
-      </p>
+    <div className="relative w-full h-full flex flex-col items-center justify-center">
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        className="absolute top-6 right-6 text-white text-2xl z-50"
+      >
+        <X size={32} />
+      </button>
 
       {/* Main video player */}
-      <div className="relative mt-6">
-        <BlurCircle top="-100px" right="-100px" />
+      <div className="relative">
         <ReactPlayer
-          url={currentTrailer.videoUrl}
-          controls={true}
+          url={`https://www.youtube.com/watch?v=${currentTrailer.key}`}
+          controls
+          playing
+          onEnded={onClose} // resume slideshow after trailer ends
           className="mx-auto max-w-full"
           width="960px"
           height="540px"
@@ -27,28 +52,25 @@ const TrailersSection = () => {
       </div>
 
       {/* Thumbnails */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-8 mt-8 max-w-3xl mx-auto">
-        {dummyTrailers.map((trailer) => (
-          <div
-            key={trailer.image}
-            className="relative hover:-translate-y-1 hover:opacity-100 duration-300 transition cursor-pointer"
-            onClick={() => setCurrentTrailer(trailer)}
-          >
-            <img
-              src={trailer.image}
-              alt="trailer"
-              className="rounded-lg w-full h-full object-cover brightness-75"
-            />
-            <PlayCircleIcon
-              strokeWidth={1.6}
-              className="absolute top-1/2 left-1/2 w-8 h-8 md:w-12 md:h-12 transform -translate-x-1/2 -translate-y-1/2 text-white"
-            />
-          </div>
-        ))}
-      </div>
+      {trailers.length > 1 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 md:gap-8 mt-6 max-w-3xl mx-auto">
+          {trailers.map((trailer) => (
+            <div
+              key={trailer.id}
+              className="relative cursor-pointer hover:opacity-80"
+              onClick={() => setCurrentTrailer(trailer)}
+            >
+              <img
+                src={`https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg`}
+                alt={trailer.name}
+                className="rounded-lg w-full h-full object-cover"
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  );
-};
+  )
+}
 
-export default TrailersSection;
-
+export default TrailersSection
