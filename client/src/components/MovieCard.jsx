@@ -11,19 +11,25 @@ const MovieCard = ({ movie }) => {
   // If movie is missing, don't render anything
   if (!movie) return null;
 
+  // Handle movie ID safely for navigation
+  const movieId = movie._id || movie.id;
+
   const handleClick = () => {
-    navigate(`/movies/${movie._id}`);
+    navigate(`/movies/${movieId}`);
     scrollTo(0, 0);
   };
 
   return (
-    <div className="flex flex-col justify-between p-3 bg-gray-800 rounded-2xl
-      hover:-translate-y-1 transition duration-300 w-66">
-      
+    <div
+      className="flex flex-col justify-between p-3 bg-gray-800 rounded-2xl
+      hover:-translate-y-1 transition duration-300 w-66"
+    >
       <img
         onClick={handleClick}
         src={
-          movie.backdrop_path
+          movie.poster_path
+            ? image_base_url + movie.poster_path
+            : movie.backdrop_path
             ? image_base_url + movie.backdrop_path
             : '/placeholder.jpg' // fallback image
         }
@@ -31,9 +37,7 @@ const MovieCard = ({ movie }) => {
         className="rounded-lg h-52 w-full object-cover object-right-bottom cursor-pointer"
       />
 
-      <p className="font-semibold mt-2 truncate">
-        {movie.title || 'Untitled'}
-      </p>
+      <p className="font-semibold mt-2 truncate">{movie.title || 'Untitled'}</p>
 
       <p className="text-sm text-gray-400 mt-2">
         {movie.release_date ? new Date(movie.release_date).getFullYear() : '—'} .
@@ -61,4 +65,3 @@ const MovieCard = ({ movie }) => {
 };
 
 export default MovieCard;
-
