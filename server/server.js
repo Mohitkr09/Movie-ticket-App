@@ -12,16 +12,16 @@ import userRouter from './routes/userRoutes.js';
 import { stripeWebhooks } from './controllers/stripeWebhooks.js';
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 await connectDB();
 
 // ✅ Stripe webhook must come before JSON parser
 app.use('/api/stripe', express.raw({ type: 'application/json' }), stripeWebhooks);
 
-// ✅ CORS config (replace old app.use(cors()))
+// ✅ CORS config
 const allowedOrigins = [
-  "https://movie-ticket-app.vercel.app", // frontend on Vercel
+  "https://movie-ticket-app-7d2z.vercel.app", // your actual Vercel frontend
   "http://localhost:5173", // local dev
 ];
 
@@ -48,5 +48,6 @@ app.use('/api/booking', bookingRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/user', userRouter);
 
-app.listen(port, () => console.log(`✅ Server listening at http://localhost:${port}`));
-
+app.listen(port, () =>
+  console.log(`✅ Server listening at http://localhost:${port}`)
+);
