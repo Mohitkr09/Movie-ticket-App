@@ -7,7 +7,7 @@ export default defineConfig({
 
   server: {
     proxy: {
-      // Proxy API requests during local dev to your Express server
+      // Proxy API requests during local dev to your Express backend
       '/api': 'http://localhost:3000',
     },
   },
@@ -16,17 +16,14 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Separate React libs
+          // Split React into its own chunk for better caching
           react: ['react', 'react-dom'],
-
-          // Example: if you’re using Chart.js
-          chart: ['chart.js'],
-
-          // Add more here if you include other heavy libs (e.g. lodash, three.js, etc.)
         },
       },
     },
-    // Raise warning limit (optional, doesn’t affect performance)
+    // Increase warning threshold (optional)
     chunkSizeWarningLimit: 1000,
   },
 })
+
+
