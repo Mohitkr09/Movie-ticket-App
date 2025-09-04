@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from 'react'
-import ReactPlayer from 'react-player'
-import { X } from 'lucide-react'
+import React, { useEffect, useState, Suspense } from "react"
+import { X } from "lucide-react"
+
+// Lazy import ReactPlayer
+const ReactPlayer = React.lazy(() => import("react-player"))
 
 const TrailersSection = ({ movie, onClose }) => {
   const [trailers, setTrailers] = useState([])
@@ -19,7 +21,7 @@ const TrailersSection = ({ movie, onClose }) => {
           setCurrentTrailer(data.trailers[0]) // first trailer as default
         }
       } catch (error) {
-        console.error('Error fetching trailers:', error)
+        console.error("Error fetching trailers:", error)
       }
     }
 
@@ -40,15 +42,17 @@ const TrailersSection = ({ movie, onClose }) => {
 
       {/* Main video player */}
       <div className="relative">
-        <ReactPlayer
-          url={`https://www.youtube.com/watch?v=${currentTrailer.key}`}
-          controls
-          playing
-          onEnded={onClose} // resume slideshow after trailer ends
-          className="mx-auto max-w-full"
-          width="960px"
-          height="540px"
-        />
+        <Suspense fallback={<div className="text-white">Loading player...</div>}>
+          <ReactPlayer
+            url={`https://www.youtube.com/watch?v=${currentTrailer.key}`}
+            controls
+            playing
+            onEnded={onClose} // resume slideshow after trailer ends
+            className="mx-auto max-w-full"
+            width="960px"
+            height="540px"
+          />
+        </Suspense>
       </div>
 
       {/* Thumbnails */}
@@ -74,3 +78,4 @@ const TrailersSection = ({ movie, onClose }) => {
 }
 
 export default TrailersSection
+
