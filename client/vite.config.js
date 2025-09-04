@@ -4,25 +4,29 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+
   server: {
     proxy: {
+      // Proxy API requests during local dev to your Express server
       '/api': 'http://localhost:3000',
     },
   },
+
   build: {
     rollupOptions: {
       output: {
-        // Split big libraries into separate chunks
         manualChunks: {
+          // Separate React libs
           react: ['react', 'react-dom'],
-          firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+
+          // Example: if you’re using Chart.js
           chart: ['chart.js'],
+
+          // Add more here if you include other heavy libs (e.g. lodash, three.js, etc.)
         },
       },
     },
-    // Increase limit (optional, just hides warning if needed)
+    // Raise warning limit (optional, doesn’t affect performance)
     chunkSizeWarningLimit: 1000,
   },
 })
-
-
