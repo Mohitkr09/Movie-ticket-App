@@ -7,23 +7,25 @@ export default defineConfig({
 
   server: {
     proxy: {
-      // Proxy API requests during local dev to your Express backend
-      '/api': 'http://localhost:3000',
+      '/api': {
+        target: 'http://localhost:3000', // only for local dev
+        changeOrigin: true,
+      },
     },
+  },
+
+  define: {
+    'process.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL),
   },
 
   build: {
     rollupOptions: {
       output: {
         manualChunks: {
-          // Split React into its own chunk for better caching
           react: ['react', 'react-dom'],
         },
       },
     },
-    // Increase warning threshold (optional)
     chunkSizeWarningLimit: 1000,
   },
 })
-
-
