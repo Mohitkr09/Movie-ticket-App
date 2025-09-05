@@ -16,38 +16,47 @@ export const getUserBookings = async(req,res)=>{
   }
 }
 
-export const updateFavorite = async(req,res)=>{
-  try{
-    const {movieId} = req.body;
-    const userId = req.auth().userId;
-    const user =await clerkClient.users.getUser(userId)
+export const updateFavorite = async (req, res) => {
+  try {
+    const userId = req.auth.userId; // <-- updated
+    const { movieId } = req.body;
 
-    if(!user.privateMetadata.favorites){
-      user.privateMetadata.favorites=[]
+    if (!movieId) {
+      return res.status(400).json({ success: false, message: 'movieId is required' });
     }
 
-    if(!user.privateMetadata.favorites.includes(movieId)){
-      user.privateMetadata.favorites.push(movieId)
+    const user = await clerkClient.users.getUser(userId);
+
+    // ensure privateMetadata exists
+    const privateMetadata = user.privateMetadata || {};
+    const favorites = privateMetadata.favorites || [];
+
+    let updatedFavorites;
+    if (favorites.includes(movieId)) {
+      updatedFavorites = favorites.filter((id) => id !== movieId);
     } else {
-      user.privateMetadata.favorites = user.privateMetadata.favorites.filter(item => item!== movieId)
+      updatedFavorites = [...favorites, movieId];
     }
-    await clerkClient.users.updateUserMetadata(userId,{privateMetadata:user.privateMetadata})
-    res.json({success: true,message:"Favorite movie updated successfully."})
-  }catch (error){
-    console.error(error.message);
-    res.json({success:false,message:error.message});
-  }
-}
 
-export const getFavorites = async(req,res)=>{
-  try{
-    const user = await clerkClient.users.getUser(req.auth().userId)
-    const favorites = user.privateMetadata.favorites;
-    
-    const movies = await Movie.find({_id: {$in: favorites}})
-    res.json({success: true,movies})
-  }catch (error){
-    console.error(error.message);
-    res.json({success:false,message:error.message});
+    await clerkClient.users.updateUserMetadata(userId, {
+      privateMetadata: { ...privateMetadata, favorites: updatedFavorites },
+    });
+
+    res.json({ success: true, message: 'Favorite movie updated successfully.' });
+  } catch (error) {
+    console.error('Favorite update error:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
-}
+};
+export const getFavorites = async (req, res) => {
+  try {
+    const user = await clerkClient.users.getUser(req.auth.userId);
+    const favorites = user.privateMetadata?.favorites || [];
+
+    const movies = await Movie.find({ _id: { $in: favorites } });
+    res.json({ success: true, movies });
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};

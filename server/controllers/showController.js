@@ -4,11 +4,10 @@ import Show from '../models/Show.js'
 import { inngest } from '../inngest/index.js'
 
 /**
- * Fetch "Now Playing" movies from TMDB + attach trailers
+ * Fetch "Now Playing" movies from TMDB + attach trailers + genres
  */
 export const getNowPlayingMovies = async (req, res) => {
   try {
-    // Fetch now playing movies
     const { data } = await axios.get(
       'https://api.themoviedb.org/3/movie/now_playing',
       {
@@ -19,7 +18,6 @@ export const getNowPlayingMovies = async (req, res) => {
     const movies = await Promise.all(
       (data.results || []).map(async (movie) => {
         try {
-          // Fetch details + videos in parallel
           const [detailsRes, videosRes] = await Promise.all([
             axios.get(`https://api.themoviedb.org/3/movie/${movie.id}`, {
               headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
@@ -29,37 +27,33 @@ export const getNowPlayingMovies = async (req, res) => {
             }),
           ])
 
-          // ✅ Trailer
           const trailer = (videosRes.data.results || []).find(
             (vid) => vid.site === 'YouTube' && vid.type === 'Trailer'
           )
           const trailerKey = trailer ? trailer.key : null
-
-          // ✅ Runtime
-          const runtime = detailsRes.data.runtime
-
-          console.log(
-            `Movie: ${movie.title}, Runtime: ${runtime}, TrailerKey: ${trailerKey}`
-          )
+          const runtime = detailsRes.data.runtime || null
+          const genres = detailsRes.data.genres || []
 
           return {
             ...movie,
             runtime,
             trailerKey,
+            genres,
           }
         } catch (err) {
           console.error(`Details/trailer fetch failed for movie ${movie.id}`, err.message)
-          return { ...movie, runtime: null, trailerKey: null }
+          return { ...movie, runtime: null, trailerKey: null, genres: [] }
         }
       })
     )
 
     res.json({ success: true, movies })
   } catch (error) {
-    console.error(error)
+    console.error(error.message)
     res.status(500).json({ success: false, message: error.message })
   }
 }
+
 /**
  * Add movie + create show timings
  */
@@ -68,15 +62,12 @@ export const addShow = async (req, res) => {
     const { movieId, showsInput, showPrice } = req.body
 
     if (!movieId) {
-      return res
-        .status(400)
-        .json({ success: false, message: 'movieId (TMDB ID) is required' })
+      return res.status(400).json({ success: false, message: 'movieId (TMDB ID) is required' })
     }
 
     let movie = await Movie.findById(movieId)
 
     if (!movie) {
-      // Fetch both details + credits in parallel
       const [movieDetailsResponse, movieCreditsResponse] = await Promise.all([
         axios.get(`https://api.themoviedb.org/3/movie/${movieId}`, {
           headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
@@ -89,25 +80,33 @@ export const addShow = async (req, res) => {
       const movieApiData = movieDetailsResponse.data
       const movieCreditsData = movieCreditsResponse.data
 
+      const casts = (movieCreditsData.cast || [])
+        .slice(0, 10)
+        .map((c) => ({
+          id: c.id,
+          name: c.name,
+          character: c.character,
+          profile_path: c.profile_path,
+        }))
+
       const movieDetails = {
-        _id: movieId, // store TMDB movieId as _id
-        title: movieApiData.title,
-        overview: movieApiData.overview,
-        poster_path: movieApiData.poster_path,
-        backdrop_path: movieApiData.backdrop_path,
-        genres: movieApiData.genres,
-        casts: movieCreditsData.cast,
-        release_date: movieApiData.release_date,
-        original_language: movieApiData.original_language,
+        _id: movieId,
+        title: movieApiData.title || 'Untitled',
+        overview: movieApiData.overview || '',
+        poster_path: movieApiData.poster_path || '',
+        backdrop_path: movieApiData.backdrop_path || '',
+        genres: movieApiData.genres || [],
+        casts,
+        release_date: movieApiData.release_date || null,
+        original_language: movieApiData.original_language || 'N/A',
         tagline: movieApiData.tagline || '',
-        vote_average: movieApiData.vote_average,
-        runtime: movieApiData.runtime,
+        vote_average: movieApiData.vote_average || 0,
+        runtime: movieApiData.runtime || null,
       }
 
       movie = await Movie.create(movieDetails)
     }
 
-    // Build show objects
     const showsToCreate = []
     showsInput.forEach((show) => {
       const showDate = show.date
@@ -133,7 +132,7 @@ export const addShow = async (req, res) => {
 
     res.json({ success: true, message: 'Show(s) added successfully.' })
   } catch (error) {
-    console.error(error)
+    console.error(error.message)
     res.status(500).json({ success: false, message: error.message })
   }
 }
@@ -149,14 +148,14 @@ export const getShows = async (req, res) => {
 
     const uniqueMovies = {}
     shows.forEach((show) => {
-      if (!uniqueMovies[show.movie._id]) {
+      if (show.movie && !uniqueMovies[show.movie._id]) {
         uniqueMovies[show.movie._id] = show.movie
       }
     })
 
     res.json({ success: true, shows: Object.values(uniqueMovies) })
   } catch (error) {
-    console.error(error)
+    console.error(error.message)
     res.status(500).json({ success: false, message: error.message })
   }
 }
@@ -167,38 +166,75 @@ export const getShows = async (req, res) => {
 export const getShow = async (req, res) => {
   try {
     const { movieId } = req.params
+
+    let movie = await Movie.findById(movieId)
+
+    if (!movie) {
+      try {
+        const [movieRes, creditsRes] = await Promise.all([
+          axios.get(`https://api.themoviedb.org/3/movie/${movieId}`, {
+            headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
+          }),
+          axios.get(`https://api.themoviedb.org/3/movie/${movieId}/credits`, {
+            headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
+          }),
+        ])
+
+        const movieData = movieRes.data
+        const creditsData = creditsRes.data
+
+        const casts = (creditsData.cast || [])
+          .slice(0, 10)
+          .map((c) => ({
+            id: c.id,
+            name: c.name,
+            character: c.character,
+            profile_path: c.profile_path,
+          }))
+
+        movie = await Movie.create({
+          _id: movieData.id,
+          title: movieData.title || 'Untitled',
+          overview: movieData.overview || '',
+          poster_path: movieData.poster_path || '',
+          backdrop_path: movieData.backdrop_path || '',
+          genres: movieData.genres || [],
+          casts,
+          release_date: movieData.release_date || null,
+          original_language: movieData.original_language || 'N/A',
+          tagline: movieData.tagline || '',
+          vote_average: movieData.vote_average || 0,
+          runtime: movieData.runtime || null,
+        })
+      } catch (err) {
+        console.error(`Failed to fetch movie ${movieId} from TMDB:`, err.message)
+        return res.status(404).json({ success: false, message: 'Movie not found' })
+      }
+    }
+
     const shows = await Show.find({
       movie: movieId,
       showDateTime: { $gte: new Date() },
     })
-    const movie = await Movie.findById(movieId)
 
-    // Fetch trailer for the movie
     let trailerKey = null
     try {
       const { data: videos } = await axios.get(
         `https://api.themoviedb.org/3/movie/${movieId}/videos`,
-        {
-          headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
-        }
+        { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
       )
-
       const trailer = (videos.results || []).find(
         (vid) => vid.site === 'YouTube' && vid.type === 'Trailer'
       )
-
       trailerKey = trailer ? trailer.key : null
-      console.log(`Single Movie: ${movie.title}, TrailerKey: ${trailerKey}`)
     } catch (err) {
-      console.error(`Trailer fetch failed for movie ${movieId}`, err)
+      console.error(`Trailer fetch failed for movie ${movieId}:`, err.message)
     }
 
     const dateTime = {}
     shows.forEach((show) => {
       const date = show.showDateTime.toISOString().split('T')[0]
-      if (!dateTime[date]) {
-        dateTime[date] = []
-      }
+      if (!dateTime[date]) dateTime[date] = []
       dateTime[date].push({ time: show.showDateTime, showId: show._id })
     })
 
@@ -208,7 +244,7 @@ export const getShow = async (req, res) => {
       dateTime,
     })
   } catch (error) {
-    console.error(error)
+    console.error(error.message)
     res.status(500).json({ success: false, message: error.message })
   }
 }
@@ -232,15 +268,13 @@ export const getMovieVideos = async (req, res) => {
       .map((vid) => ({
         id: vid.id,
         key: vid.key,
-        name: vid.name,
+        name: vid.name || 'Untitled',
         videoUrl: `https://www.youtube.com/watch?v=${vid.key}`,
       }))
 
     res.json({ success: true, trailers })
   } catch (error) {
-    console.error(error)
+    console.error(error.message)
     res.status(500).json({ success: false, message: error.message })
   }
 }
-
-
