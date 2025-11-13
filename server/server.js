@@ -14,59 +14,44 @@ import { stripeWebhooks } from './controllers/stripeWebhooks.js';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Connect to database
 await connectDB();
 
-// Stripe webhook (MUST be BEFORE express.json)
+// ✅ Stripe webhook must come before JSON parser
+app.use('/api/stripe', express.raw({ type: 'application/json' }), stripeWebhooks);
+
+// ✅ CORS config
 app.use(
-  '/api/stripe',
-  express.raw({ type: 'application/json' }),
-  stripeWebhooks
+  cors({
+    origin: [
+      "https://movie-ticket-app-jz7m.vercel.app",
+      "http://localhost:5173",
+    ],
+    credentials: true,
+  })
 );
-
-// -----------------------------
-// ✅ CORS Configuration
-// -----------------------------
-
-const allowedOrigins = [
-  "https://movie-ticket-app-jz7m.vercel.app",   // Your live Vercel frontend URL
-  "http://localhost:5173",                       // Vite local environment
-];
 
 app.use(
   cors({
     origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
       }
-      console.log("❌ Blocked by CORS:", origin);
-      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
 );
 
-// Parse JSON (after Stripe webhook)
 app.use(express.json());
-
-// Clerk authentication middleware
 app.use(clerkMiddleware());
 
-// -----------------------------
-// API Routes
-// -----------------------------
-
 app.get('/', (req, res) => res.send('Server is Live!'));
-
 app.use('/api/inngest', serve({ client: inngest, functions }));
 app.use('/api/show', showRouter);
 app.use('/api/booking', bookingRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/user', userRouter);
-
-// -----------------------------
-// Start Server
-// -----------------------------
 
 app.listen(port, () =>
   console.log(`✅ Server listening at http://localhost:${port}`)
