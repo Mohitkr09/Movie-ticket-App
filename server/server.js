@@ -10,6 +10,8 @@ import bookingRouter from './routes/BookingRoutes.js';
 import adminRouter from './routes/adminRoutes.js';
 import userRouter from './routes/userRoutes.js';
 import { stripeWebhooks } from './controllers/stripeWebhooks.js';
+import aiRouter from './routes/aiRoutes.js';
+
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -20,15 +22,10 @@ await connectDB();
 app.use('/api/stripe', express.raw({ type: 'application/json' }), stripeWebhooks);
 
 // ✅ CORS config
-app.use(
-  cors({
-    origin: [
-      "https://movie-ticket-app-jz7m.vercel.app",
-      "http://localhost:5173",
-    ],
-    credentials: true,
-  })
-);
+const allowedOrigins = [
+  "https://movie-ticket-app-7d2z.vercel.app", // your actual Vercel frontend
+  "http://localhost:5173", // local dev
+];
 
 app.use(
   cors({
@@ -52,6 +49,8 @@ app.use('/api/show', showRouter);
 app.use('/api/booking', bookingRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/user', userRouter);
+app.use("/api/ai", aiRouter);
+
 
 app.listen(port, () =>
   console.log(`✅ Server listening at http://localhost:${port}`)

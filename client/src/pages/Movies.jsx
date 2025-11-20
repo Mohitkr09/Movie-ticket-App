@@ -1,4 +1,4 @@
-import React from 'react'
+import React from 'react'  
 import MovieCard from '../components/MovieCard'
 import BlurCircle from '../components/BlurCircle'
 import { useAppContext } from '../context/AppContext'
@@ -6,7 +6,6 @@ import { useAppContext } from '../context/AppContext'
 const Movies = () => {
   const { shows } = useAppContext()
 
-  // Safety: filter out null/undefined and those without _id
   const validShows = (shows || []).filter(show => show && show._id)
 
   return validShows.length > 0 ? (
@@ -27,5 +26,6 @@ const Movies = () => {
   )
 }
 
-export default Movies
+export default Movies;
+
 

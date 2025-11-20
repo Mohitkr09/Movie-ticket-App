@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import timeFormat from '../lib/timeFormat';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 const HeroSection = ({ onMovieSelect }) => {
   const navigate = useNavigate();
@@ -10,12 +11,11 @@ const HeroSection = ({ onMovieSelect }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showTrailer, setShowTrailer] = useState(false);
 
-  // Fetch now-playing movies
+  // Fetch now-playing movies using axios (FIXED)
   useEffect(() => {
     const fetchNowPlaying = async () => {
       try {
-        const res = await fetch('/api/show/now-playing');
-        const data = await res.json();
+        const { data } = await axios.get('/api/show/now-playing');
 
         if (data.success && data.movies?.length > 0) {
           setMovies(data.movies);
@@ -23,24 +23,25 @@ const HeroSection = ({ onMovieSelect }) => {
         }
       } catch (error) {
         console.error('Error fetching movies:', error);
+        toast.error("Failed to load movies");
       }
     };
 
     fetchNowPlaying();
   }, []);
 
-  // Auto-rotate every 6 seconds (pause when trailer modal is open)
+  // Auto-rotate every 6 seconds
   useEffect(() => {
     if (movies.length === 0 || showTrailer) return;
 
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % movies.length);
+      setCurrentIndex(prev => (prev + 1) % movies.length);
     }, 6000);
 
     return () => clearInterval(interval);
   }, [movies, showTrailer]);
 
-  // Notify parent when selected movie changes
+  // Notify parent
   useEffect(() => {
     if (movies.length > 0 && onMovieSelect) {
       onMovieSelect(movies[currentIndex]);
@@ -65,7 +66,6 @@ const HeroSection = ({ onMovieSelect }) => {
     ? `${import.meta.env.VITE_TMDB_IMAGE_BASE_URL}${movie.poster_path}`
     : '/placeholder.jpg';
 
-  // Dynamic genres or fallback
   const genresText =
     movie.genres?.length > 0
       ? movie.genres.map((g) => g.name).join(' | ')
@@ -88,48 +88,40 @@ const HeroSection = ({ onMovieSelect }) => {
 
       {/* Content */}
       <div className="relative z-10 max-w-3xl">
-        {/* Title */}
         <h1 className="text-5xl md:text-[70px] md:leading-[1.1] font-semibold drop-shadow-lg">
           {movie.title}
         </h1>
 
-        {/* Meta info */}
         <div className="flex items-center gap-4 text-gray-300 mt-2">
           <span>{genresText}</span>
           <div className="flex items-center gap-1">
-            <CalendarIcon className="w-4.5 h-4.5" />{' '}
+            <CalendarIcon className="w-4.5 h-4.5" />
             {movie.release_date?.split('-')[0] || 'N/A'}
           </div>
           <div className="flex items-center gap-1">
-            <ClockIcon className="w-4.5 h-4.5" /> {timeFormat(movie.runtime) || 'N/A'}
+            <ClockIcon className="w-4.5 h-4.5" />
+            {timeFormat(movie.runtime) || 'N/A'}
           </div>
         </div>
 
-        {/* Overview */}
         <p className="max-w-md text-gray-300 line-clamp-3 mt-4">{movie.overview}</p>
 
-        {/* Buttons */}
         <div className="flex items-center gap-4 mt-6">
-          {/* Explore button */}
           <button
             onClick={() => navigate(`/movies/${movie._id || movie.id}`)}
             className="flex items-center gap-2 px-6 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-full font-medium"
           >
-            Explore <ArrowRight className="w-5 h-5" />
+            Explore <ArrowRight />
           </button>
 
-          {/* Watch Trailer button */}
           <button
             onClick={() => {
-              if (movie.trailerKey) {
-                setShowTrailer(true);
-              } else {
-                toast.error('Trailer not available');
-              }
+              if (movie.trailerKey) setShowTrailer(true);
+              else toast.error('Trailer not available');
             }}
             className="flex items-center gap-2 px-6 py-3 text-sm bg-white/20 hover:bg-white/30 transition rounded-full font-medium text-white"
           >
-            <PlayCircleIcon className="w-5 h-5" /> Watch Trailer
+            <PlayCircleIcon /> Watch Trailer
           </button>
         </div>
       </div>
