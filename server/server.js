@@ -21,30 +21,39 @@ const port = process.env.PORT || 3000;
 await connectDB();
 
 // -------------------------------
-// ⚠️ STRIPE WEBHOOK (raw body)
+// ⚠️ STRIPE WEBHOOK (RAW BODY)
 // MUST BE BEFORE express.json()
 // -------------------------------
-app.use("/api/stripe", express.raw({ type: "application/json" }), stripeWebhooks);
+app.use(
+  "/api/stripe",
+  express.raw({ type: "application/json" }),
+  stripeWebhooks
+);
 
 // -------------------------------
-// 🌍 CORS CONFIG
+// 🌍 CORS CONFIG (UPDATED)
 // -------------------------------
 const allowedOrigins = [
-  "https://movie-ticket-app-zi7g.vercel.app",  // NEW DEPLOYED FRONTEND ✔
-  "http://localhost:5173",                     // Local dev ✔
-  "https://movie-ticket-app-8-bcn5.onrender.com", // If frontend moves to Render ✔
+  "https://movie-ticket-app-jz7m.vercel.app",  // Your current Vercel frontend
+  "http://localhost:5173",                     // Local dev
+  "https://movie-ticket-app-6-eery.onrender.com", // Backend itself (Render)
+  "https://movie-ticket-app-zi7g.vercel.app"   // Another possible build of frontend
 ];
 
+// 🔥 SAFE CORS FUNCTION
 app.use(
   cors({
-    origin: function (origin, callback) {
-      // Allow server-to-server calls without origin
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        console.log("❌ BLOCKED BY CORS:", origin);
-        callback(new Error("Not allowed by CORS"));
+    origin: (origin, callback) => {
+      // Allow requests with no origin (e.g., Postman, backend-to-backend)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        console.log("✔ ALLOWED ORIGIN:", origin);
+        return callback(null, true);
       }
+
+      console.log("❌ BLOCKED BY CORS:", origin);
+      return callback(new Error("Not allowed by CORS"));
     },
     credentials: true,
   })
@@ -70,11 +79,11 @@ app.use("/api/show", showRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/user", userRouter);
-app.use("/api/ai", aiRouter);   // ✔ AI ROUTER ADDED
+app.use("/api/ai", aiRouter);
 
 // -------------------------------
 // 🚀 START SERVER
 // -------------------------------
-app.listen(port, () =>
-  console.log(`✅ Server listening at http://localhost:${port}`)
-);
+app.listen(port, () => {
+  console.log(`✅ Server listening at http://localhost:${port}`);
+});
