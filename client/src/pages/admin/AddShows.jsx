@@ -17,11 +17,13 @@ const AddShows = () => {
   const [dateTimeInput, setDateTimeInput] = useState('');
   const [addingShow, setAddingShow] = useState(false);
 
+  // Fetch now-playing movies
   const fetchNowPlayingMovies = async () => {
     try {
       const { data } = await axios.get('/api/show/now-playing', {
         headers: { Authorization: `Bearer ${await getToken()}` },
       });
+
       if (data.success) {
         setNowPlayingMovies(data.movies);
       }
@@ -30,12 +32,16 @@ const AddShows = () => {
     }
   };
 
+  // Add date + time to list
   const handleDateTimeAdd = () => {
     if (!dateTimeInput) return;
+
     const [date, time] = dateTimeInput.split('T');
     if (!date || !time) return;
+
     setDateTimeSelection((prev) => {
       const times = prev[date] || [];
+
       if (!times.includes(time)) {
         return { ...prev, [date]: [...times, time] };
       }
@@ -43,29 +49,33 @@ const AddShows = () => {
     });
   };
 
+  // Remove time from selection
   const handleRemoveTime = (date, time) => {
     setDateTimeSelection((prev) => {
       const filteredTimes = prev[date].filter((t) => t !== time);
+
       if (filteredTimes.length === 0) {
         const { [date]: _, ...rest } = prev;
         return rest;
       }
-      return {
-        ...prev,
-        [date]: filteredTimes,
-      };
+
+      return { ...prev, [date]: filteredTimes };
     });
   };
 
+  // Submit Show Add
   const handleSubmit = async () => {
     try {
       setAddingShow(true);
+
       if (!selectedMovie || Object.keys(dateTimeSelection).length === 0 || !showPrice) {
         return toast('Missing required fields');
       }
-      const showsInput = Object.entries(dateTimeSelection).map(([date, time]) => ({
+
+      // FIXED: Make sure "time" is ALWAYS an array
+      const showsInput = Object.entries(dateTimeSelection).map(([date, times]) => ({
         date,
-        time,
+        time: Array.isArray(times) ? times : [times],
       }));
 
       const payload = {
@@ -83,14 +93,16 @@ const AddShows = () => {
         setSelectedMovie(null);
         setDateTimeSelection({});
         setShowPrice('');
+        setDateTimeInput('');
       } else {
         toast.error(data.message);
       }
     } catch (error) {
       console.error('Submission error:', error);
       toast.error('An error occurred. Please try again.');
+    } finally {
+      setAddingShow(false);
     }
-    setAddingShow(false);
   };
 
   useEffect(() => {
@@ -99,10 +111,12 @@ const AddShows = () => {
     }
   }, [user]);
 
+  // UI Rendering
   return nowPlayingMovies.length > 0 ? (
     <>
       <Title text1="Add" text2="Shows" />
       <p className="mt-10 text-lg font-medium">Now Playing Movies</p>
+
       <div className="overflow-x-auto pb-3 px-3">
         <div className="flex flex-wrap gap-4 mt-4 w-max">
           {nowPlayingMovies.map((movie) => (
@@ -125,11 +139,13 @@ const AddShows = () => {
                   <p className="text-gray-300">{kConverter(movie.vote_count)} Votes</p>
                 </div>
               </div>
+
               {selectedMovie === (movie.id || movie._id) && (
                 <div className="absolute top-2 right-2 flex items-center justify-center bg-primary h-6 w-6 rounded">
                   <CheckIcon className="w-4 h-4 text-white" strokeWidth={2.5} />
                 </div>
               )}
+
               <p className="font-medium truncate">{movie.title}</p>
               <p className="text-gray-400 text-sm">{movie.release_date}</p>
             </div>
@@ -154,6 +170,7 @@ const AddShows = () => {
 
       <div className="mt-6">
         <label className="block text-sm font-medium mb-2">Select Date and Time</label>
+
         <div className="inline-flex gap-5 border border-gray-600 p-1 pl-3 rounded-lg">
           <input
             type="datetime-local"
@@ -174,27 +191,27 @@ const AddShows = () => {
         <div className="mt-6">
           <h2 className="mb-2">Selected Date-Time</h2>
           <ul className="space-y-3">
-           {Object.entries(dateTimeSelection).map(([date, times = []]) => (
-  <li key={date}>
-    <div className="font-medium">{date}</div>
-    <div className="flex flex-wrap gap-2 mt-1 text-sm">
-      {(times || []).map((time) => (
-        <div
-          key={`${date}-${time}`}
-          className="border border-primary px-2 py-1 flex items-center rounded"
-        >
-          <span>{time}</span>
-          <DeleteIcon
-            onClick={() => handleRemoveTime(date, time)}
-            width={15}
-            className="ml-2 text-red-500 hover:text-red-700 cursor-pointer"
-          />
-        </div>
-      ))}
-    </div>
-  </li>
-))}
+            {Object.entries(dateTimeSelection).map(([date, times]) => (
+              <li key={date}>
+                <div className="font-medium">{date}</div>
 
+                <div className="flex flex-wrap gap-2 mt-1 text-sm">
+                  {times.map((time) => (
+                    <div
+                      key={`${date}-${time}`}
+                      className="border border-primary px-2 py-1 flex items-center rounded"
+                    >
+                      <span>{time}</span>
+                      <DeleteIcon
+                        onClick={() => handleRemoveTime(date, time)}
+                        width={15}
+                        className="ml-2 text-red-500 hover:text-red-700 cursor-pointer"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </li>
+            ))}
           </ul>
         </div>
       )}
@@ -213,4 +230,3 @@ const AddShows = () => {
 };
 
 export default AddShows;
-
