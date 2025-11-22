@@ -23,7 +23,6 @@ const SeatLayout = () => {
   const [occupiedSeats, setOccupiedSeats] = useState([])
   const [isFavorite, setIsFavorite] = useState(false)
 
-  // ---------------- Fetch show info ----------------
   const getShow = async () => {
     try {
       const { data } = await axios.get(`/api/show/${id}`)
@@ -33,7 +32,6 @@ const SeatLayout = () => {
     }
   }
 
-  // ---------------- Fetch occupied seats ----------------
   const getOccupiedSeats = async () => {
     if (!selectedTime) return
     try {
@@ -44,7 +42,6 @@ const SeatLayout = () => {
     }
   }
 
-  // ---------------- Seat selection ----------------
   const handleSeatClick = (seatId) => {
     if (!selectedTime) return toast('Select a time first')
     if (occupiedSeats.includes(seatId)) return toast('Seat already booked')
@@ -56,7 +53,6 @@ const SeatLayout = () => {
     )
   }
 
-  // ---------------- Book tickets ----------------
   const bookTickets = async () => {
     if (!user) return toast.error('Login required')
     if (!selectedTime || !selectedSeats.length) return toast.error('Select time & seats')
@@ -73,7 +69,6 @@ const SeatLayout = () => {
     }
   }
 
-  // ---------------- Toggle favorite ----------------
   const handleFavorite = async () => {
     if (!user) return toast.error('Login required')
 
@@ -91,7 +86,6 @@ const SeatLayout = () => {
     }
   }
 
-  // ---------------- Effects ----------------
   useEffect(() => {
     getShow()
     setIsFavorite(favoriteMovies.some((fav) => fav._id === id))
@@ -106,7 +100,6 @@ const SeatLayout = () => {
   const movie = show.movie
   const showTimes = show.dateTime?.[date] || []
 
-  // ---------------- Render a row of seats ----------------
   const renderSeats = (row, count = 10) => (
     <div key={row} className="flex gap-2 justify-center flex-wrap">
       {Array.from({ length: count }, (_, i) => {
@@ -128,29 +121,32 @@ const SeatLayout = () => {
   )
 
   return (
-    <div className="px-6 md:px-16 lg:px-36 py-14 text-white relative">
+    <div className="px-4 sm:px-6 md:px-12 lg:px-24 py-10 text-white relative">
 
       <BlurCircle top="-120px" left="-120px" />
       <BlurCircle bottom="-40px" right="-40px" />
 
-      <div className="w-full max-w-5xl mx-auto flex flex-col gap-12">
+      <div className="w-full max-w-6xl mx-auto flex flex-col gap-12">
 
-        {/* ---------------- Movie Info + Timings ---------------- */}
+        {/* TOP SECTION */}
         <div className="flex flex-col md:flex-row gap-10">
 
-          {/* LEFT SIDE */}
+          {/* LEFT COLUMN */}
           <div className="md:w-1/3 flex flex-col gap-6">
 
             <img
               src={movie.poster_path ? image_base_url + movie.poster_path : "/placeholder.jpg"}
-              className="rounded-xl shadow-lg w-full"
+              className="rounded-xl shadow-lg w-full object-cover max-h-[420px]"
             />
 
-            <h2 className="text-3xl font-semibold">{movie.title}</h2>
-            <p className="text-gray-300">{movie.genres?.map((g) => g.name).join(", ")}</p>
-            <p className="text-gray-400">{timeFormat(movie.runtime)} • {movie.release_date?.split("-")[0]}</p>
+            <h2 className="text-2xl sm:text-3xl font-semibold">{movie.title}</h2>
+            <p className="text-gray-300 text-sm sm:text-base">
+              {movie.genres?.map((g) => g.name).join(", ")}
+            </p>
+            <p className="text-gray-400 text-sm sm:text-base">
+              {timeFormat(movie.runtime)} • {movie.release_date?.split("-")[0]}
+            </p>
 
-            {/* Favorite + Trailer */}
             <div className="flex gap-4">
               <button onClick={handleFavorite} className="p-2 bg-gray-800 rounded-full hover:bg-gray-700">
                 <Heart className={`w-5 h-5 ${isFavorite ? "fill-primary text-primary" : ""}`} />
@@ -168,11 +164,11 @@ const SeatLayout = () => {
               </button>
             </div>
 
-            {/* Available Timings */}
-            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 mt-4">
+            {/* TIMINGS */}
+            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 mt-4 w-full">
               <h3 className="font-semibold mb-3">Available Timings</h3>
 
-              <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
                 {showTimes.map(t => (
                   <div
                     key={t.time}
@@ -191,19 +187,21 @@ const SeatLayout = () => {
           </div>
         </div>
 
-        {/* ---------------- Seat Layout (STATIC BELOW TIMINGS) ---------------- */}
+        {/* SEAT SELECTION */}
         {selectedTime ? (
           <div className="flex flex-col items-center">
 
-            <h2 className="text-2xl font-semibold mb-4">Select your seats</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold mb-4">Select your seats</h2>
 
-            <img src={assets.screenImage} className="mx-auto mt-2 mb-2" />
+            <img
+              src={assets.screenImage}
+              className="mx-auto mt-2 mb-2 max-w-[90%] sm:max-w-md"
+            />
             <p className="text-gray-400 text-sm mb-10">Screen Side</p>
 
-            {/* Seat Grid */}
-            <div className="flex flex-col gap-8 items-center">
+            <div className="flex flex-col gap-6 items-center">
               {groupRows.map((group, idx) => (
-                <div key={idx} className="flex gap-8 justify-center flex-wrap">
+                <div key={idx} className="flex gap-6 justify-center flex-wrap">
                   {group.map(row => renderSeats(row))}
                 </div>
               ))}

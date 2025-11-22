@@ -12,7 +12,9 @@ const Theaters = () => {
   const fetchMovies = async () => {
     try {
       const { data } = await axios.get("/api/show/all");
-      if (data.success) setMovies(data.shows);
+      if (data.success) {
+        setMovies(data.shows);
+      }
     } catch (err) {
       console.log("Error fetching shows:", err);
     }
@@ -49,10 +51,15 @@ const Theaters = () => {
             md:grid-cols-3
             lg:grid-cols-4
             xl:grid-cols-5
-            gap-8
-            sm:gap-10
-            lg:gap-12
+
+            gap-x-10
+            sm:gap-x-12
+            md:gap-x-14
+            lg:gap-x-16
+
+            gap-y-14
             w-full
+
             place-items-center
             md:place-items-start
           "
