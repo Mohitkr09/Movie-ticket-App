@@ -28,16 +28,20 @@ const Theaters = () => {
   if (loading) return <Loading />;
 
   return (
-    <div className="relative px-6 md:px-16 lg:px-32 pt-28 pb-20 text-white min-h-screen">
+    <div className="relative px-5 sm:px-8 md:px-14 lg:px-24 xl:px-32 pt-28 pb-20 text-white min-h-screen">
 
       {/* Background Blur Circles */}
-      <BlurCircle top="-50px" left="-100px" />
-      <BlurCircle bottom="-50px" right="-100px" />
+      <BlurCircle top="-50px" left="-60px" />
+      <BlurCircle bottom="-60px" right="-80px" />
 
-      <h1 className="text-3xl font-semibold mb-10">Movies in Theaters</h1>
+      <h1 className="text-2xl sm:text-3xl font-semibold mb-10">
+        Movies in Theaters
+      </h1>
 
       {movies.length === 0 ? (
-        <p className="text-gray-400">No movies available in theaters.</p>
+        <p className="text-gray-400 text-center sm:text-left">
+          No movies available in theaters.
+        </p>
       ) : (
         <div
           className="
@@ -47,15 +51,14 @@ const Theaters = () => {
             md:grid-cols-3
             lg:grid-cols-4
             xl:grid-cols-5
-            gap-x-10
-            gap-y-16
-            max-sm:justify-center
+            gap-x-35
+            gap-y-14
+            place-items-center
+            md:place-items-start
           "
         >
           {movies.map((movie) => (
-            <div key={movie._id}>
-              <MovieCard movie={movie} />
-            </div>
+            <MovieCard key={movie._id} movie={movie} />
           ))}
         </div>
       )}
