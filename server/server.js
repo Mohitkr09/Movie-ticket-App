@@ -33,18 +33,27 @@ app.use(
 // -------------------------------
 // 🌍 CORS CONFIG (UPDATED)
 // -------------------------------
+// 🌍 CORS CONFIG (UPDATED)
 const allowedOrigins = [
-  "https://movie-ticket-app-jz7m.vercel.app",  // Your current Vercel frontend
-  "http://localhost:5173",                     // Local dev
-  "https://movie-ticket-app-6-eery.onrender.com", // Backend itself (Render)
-  "https://movie-ticket-app-zi7g.vercel.app"   // Another possible build of frontend
+  "http://localhost:5173",
+
+  // Your active frontend
+  "https://movie-ticket-app-radp.vercel.app",
+
+  // Your auto-generated preview deployment
+  "https://movie-ticket-app-radp-ivdlfj2w8-mohits-projects-92e7fc3c.vercel.app",
+
+  // (Optional) Old deploys
+  "https://movie-ticket-app-jz7m.vercel.app",
+  "https://movie-ticket-app-zi7g.vercel.app",
+
+  // Your backend on render
+  "https://movie-ticket-app-14.onrender.com"
 ];
 
-// 🔥 SAFE CORS FUNCTION
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (e.g., Postman, backend-to-backend)
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
@@ -58,6 +67,7 @@ app.use(
     credentials: true,
   })
 );
+
 
 // -------------------------------
 // JSON PARSER (after webhook)
