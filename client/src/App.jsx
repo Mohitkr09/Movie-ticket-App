@@ -8,15 +8,17 @@ import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Loading from "./components/Loading";
 
-// ✅ Lazy loaded pages
+// Lazy-loaded pages
 const Home = lazy(() => import("./pages/Home"));
 const Movies = lazy(() => import("./pages/Movies"));
 const MovieDetails = lazy(() => import("./pages/MovieDetails"));
 const SeatLayout = lazy(() => import("./pages/SeatLayout"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const Favorite = lazy(() => import("./pages/Favorite"));
+const Theaters = lazy(() => import("./pages/Theaters"));
+const Releases = lazy(() => import("./pages/Releases"));   // ✅ ADDED
 
-// ✅ Lazy loaded admin pages
+// Admin pages
 const Layout = lazy(() => import("./pages/admin/Layout"));
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
 const AddShows = lazy(() => import("./pages/admin/AddShows"));
@@ -32,26 +34,33 @@ const App = () => {
       <Toaster />
       {!isAdminRoute && <Navbar />}
 
-      {/* Suspense wrapper to show fallback while loading chunks */}
       <Suspense fallback={<Loading />}>
         <Routes>
+
+          {/* USER ROUTES */}
           <Route path="/" element={<Home />} />
           <Route path="/movies" element={<Movies />} />
+
+          {/* Movie Details */}
           <Route path="/movies/:id" element={<MovieDetails />} />
           <Route path="/movies/:id/:date" element={<SeatLayout />} />
-          <Route path="/my-bookings" element={<MyBookings />} />
-          <Route path="/loading/:nextUrl" element={<Loading />} />
-          <Route path="/favorite" element={<Favorite />} />
 
-          {/* Admin routes */}
+          {/* New Releases Page */}
+          <Route path="/releases" element={<Releases />} />   {/* ✅ FIXED */}
+
+          <Route path="/my-bookings" element={<MyBookings />} />
+          <Route path="/favorite" element={<Favorite />} />
+          <Route path="/theaters" element={<Theaters />} />
+
+          {/* ADMIN ROUTES */}
           <Route
             path="/admin/*"
             element={
               user ? (
                 <Layout />
               ) : (
-                <div className="min-h-screen flex justify-center items-center">
-                  <SignIn fallbackRedirectUrl={"/admin"} />
+                <div className="min-h-screen flex justify-center items-center text-white">
+                  <SignIn fallbackRedirectUrl="/admin" />
                 </div>
               )
             }
@@ -61,6 +70,16 @@ const App = () => {
             <Route path="list-shows" element={<ListShows />} />
             <Route path="list-bookings" element={<ListBookings />} />
           </Route>
+
+          {/* 404 */}
+          <Route
+            path="*"
+            element={
+              <div className="min-h-screen text-white flex items-center justify-center">
+                <h1 className="text-2xl">404 - Page Not Found</h1>
+              </div>
+            }
+          />
         </Routes>
       </Suspense>
 
