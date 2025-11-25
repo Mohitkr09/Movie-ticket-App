@@ -16,7 +16,10 @@ const SeatLayout = lazy(() => import("./pages/SeatLayout"));
 const MyBookings = lazy(() => import("./pages/MyBookings"));
 const Favorite = lazy(() => import("./pages/Favorite"));
 const Theaters = lazy(() => import("./pages/Theaters"));
-const Releases = lazy(() => import("./pages/Releases"));   // ✅ ADDED
+const Releases = lazy(() => import("./pages/Releases"));
+
+// Stripe Redirect Page
+const LoadingRedirect = lazy(() => import("./pages/LoadingRedirect"));
 
 // Admin pages
 const Layout = lazy(() => import("./pages/admin/Layout"));
@@ -46,7 +49,10 @@ const App = () => {
           <Route path="/movies/:id/:date" element={<SeatLayout />} />
 
           {/* New Releases Page */}
-          <Route path="/releases" element={<Releases />} />   {/* ✅ FIXED */}
+          <Route path="/releases" element={<Releases />} />
+
+          {/* Stripe Redirect Page */}
+          <Route path="/loading/my-bookings" element={<LoadingRedirect />} />
 
           <Route path="/my-bookings" element={<MyBookings />} />
           <Route path="/favorite" element={<Favorite />} />
@@ -71,7 +77,7 @@ const App = () => {
             <Route path="list-bookings" element={<ListBookings />} />
           </Route>
 
-          {/* 404 */}
+          {/* 404 (MUST ALWAYS BE LAST) */}
           <Route
             path="*"
             element={

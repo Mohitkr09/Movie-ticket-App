@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import BlurCircle from '../components/BlurCircle'
 import Loading from '../components/Loading'
 import { useAppContext } from '../context/AppContext'
@@ -10,10 +10,14 @@ const MyBookings = () => {
   const currency = import.meta.env.VITE_CURRENCY
   const { axios, getToken, user, image_base_url } = useAppContext()
   const navigate = useNavigate()
+  const location = useLocation()
 
   const [bookings, setBookings] = useState([])
   const [isLoading, setIsLoading] = useState(true)
 
+  // -------------------------
+  // Fetch My Bookings
+  // -------------------------
   const getMyBookings = async () => {
     try {
       const { data } = await axios.get('/api/user/bookings', {
@@ -28,9 +32,30 @@ const MyBookings = () => {
     setIsLoading(false)
   }
 
+  // -------------------------
+  // Handle Stripe Redirect
+  // -------------------------
   useEffect(() => {
-    if (user) getMyBookings()
-  }, [user])
+    const fromStripe = location.pathname.includes("/loading")
+    const loadBookings = async () => {
+      if (fromStripe) {
+        // optional: you can show a message or spinner
+        await new Promise(resolve => setTimeout(resolve, 1500))  
+
+        try {
+          await axios.get('/api/payment/verify-latest', {
+            headers: { Authorization: `Bearer ${await getToken()}` },
+          })
+        } catch (err) {
+          console.log("Payment verify error:", err)
+        }
+      }
+
+      if (user) await getMyBookings()
+    }
+
+    loadBookings()
+  }, [user, location.pathname])
 
   if (isLoading) return <Loading />
 
@@ -108,4 +133,3 @@ const MyBookings = () => {
 }
 
 export default MyBookings
-
