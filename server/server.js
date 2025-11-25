@@ -16,14 +16,16 @@ import sendEmail from "./configs/nodeMailer.js";
 const app = express();
 const port = process.env.PORT || 3000;
 
+
 // -------------------------------
 // 🔗 CONNECT DATABASE
 // -------------------------------
 await connectDB();
 
+
 // -------------------------------
-// ⚠️ STRIPE WEBHOOK (RAW BODY)
-// MUST BE BEFORE express.json()
+// ⚠️ STRIPE WEBHOOK (MUST BE 1ST)
+// Raw body needed for signature check
 // -------------------------------
 app.post(
   "/api/stripe/webhook",
@@ -31,8 +33,9 @@ app.post(
   stripeWebhooks
 );
 
+
 // -------------------------------
-// 🌍 CORS CONFIG (UPDATED)
+// 🌍 CORS CONFIG (AFTER WEBHOOK, BEFORE JSON)
 // -------------------------------
 const allowedOrigins = [
   "http://localhost:5173",
@@ -40,7 +43,7 @@ const allowedOrigins = [
   "https://movie-ticket-app-radp-ivdlfj2w8-mohits-projects-92e7fc3c.vercel.app",
   "https://movie-ticket-app-jz7m.vercel.app",
   "https://movie-ticket-app-zi7g.vercel.app",
-  "https://movie-ticket-app-14.onrender.com"
+  "https://movie-ticket-app-14.onrender.com",
 ];
 
 app.use(
@@ -54,15 +57,18 @@ app.use(
   })
 );
 
+
 // -------------------------------
-// JSON PARSER (after webhook)
+// JSON PARSER (AFTER WEBHOOK ONLY)
 // -------------------------------
 app.use(express.json());
+
 
 // -------------------------------
 // 🔐 CLERK AUTH
 // -------------------------------
 app.use(clerkMiddleware());
+
 
 // -------------------------------
 // 📧 TEST EMAIL ROUTE
@@ -72,14 +78,16 @@ app.get("/test-email", async (req, res) => {
     await sendEmail({
       to: "mkr27858@gmail.com",
       subject: "QuickShow Test Email",
-      body: "<h1>Test email success!</h1>"
+      body: "<h1>Test email success!</h1>",
     });
+
     res.send("EMAIL SENT ✔");
-  } catch (err) {
-    console.error("❌ Test email error:", err);
+  } catch (error) {
+    console.error("❌ Test email error:", error);
     res.status(500).send("FAILED ❌");
   }
 });
+
 
 // -------------------------------
 // ROUTES
@@ -92,6 +100,7 @@ app.use("/api/booking", bookingRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/user", userRouter);
 app.use("/api/ai", aiRouter);
+
 
 // -------------------------------
 // 🚀 START SERVER
