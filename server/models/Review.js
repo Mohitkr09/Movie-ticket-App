@@ -2,26 +2,32 @@ import mongoose from "mongoose";
 
 const reviewSchema = new mongoose.Schema(
 {
-movieId: {
-type: String,
-required: true
-},
-userId: {
-type: mongoose.Schema.Types.ObjectId,
-ref: "User",
-required: true
-},
-rating: {
-type: Number,
-required: true,
-min: 1,
-max: 5
-},
-comment: {
-type: String
-}
+  movieId: {
+    type: String,
+    required: true
+  },
+
+  userId: {
+    type: String,   // ✅ must match User _id type
+    required: true,
+    ref: "User"
+  },
+
+  rating: {
+    type: Number,
+    required: true,
+    min: 1,
+    max: 5
+  },
+
+  comment: {
+    type: String
+  }
+
 },
 { timestamps: true }
 );
 
-export default mongoose.model("Review", reviewSchema);
+const Review = mongoose.model("Review", reviewSchema);
+
+export default Review;

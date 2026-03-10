@@ -1,49 +1,68 @@
-import Review from "../models/Review.js";
+import Review from "../models/Review.js"
 
 export const addReview = async (req, res) => {
-try {
+  try {
 
-const { movieId, rating, comment } = req.body;
+    const { movieId, rating, comment } = req.body
 
-const review = new Review({
-movieId,
-rating,
-comment,
-userId: req.user._id
-});
+    const userId = req.auth?.userId   // Clerk user
 
-await review.save();
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      })
+    }
 
-res.json({
-success: true,
-review
-});
+    const review = new Review({
+      movieId,
+      rating,
+      comment,
+      userId
+    })
 
-} catch (error) {
-res.status(500).json({
-success: false,
-message: error.message
-});
+    await review.save()
+
+    res.json({
+      success: true,
+      review
+    })
+
+  } catch (error) {
+
+    console.error(error)
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    })
+
+  }
 }
-};
+
 
 export const getReviews = async (req, res) => {
-try {
 
-const { id } = req.params;
+  try {
 
-const reviews = await Review.find({ movieId: id })
-.populate("userId", "name");
+    const { id } = req.params
 
-res.json({
-success: true,
-reviews
-});
+    const reviews = await Review.find({ movieId: id })
 
-} catch (error) {
-res.status(500).json({
-success: false,
-message: error.message
-});
+    res.json({
+      success: true,
+      reviews
+    })
+
+  } catch (error) {
+
+    console.error(error)
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    })
+
+  }
+
 }
-};
