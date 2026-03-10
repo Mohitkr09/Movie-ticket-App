@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import BlurCircle from "../components/BlurCircle"
 import { Heart, PlayCircleIcon, StarIcon, X, Share2, Bell } from "lucide-react"
-import timeFormat from "../lib/timeFormat"
 import MovieCard from "../components/MovieCard"
 import DateSelect from "../components/DateSelect"
 import Loading from "../components/Loading"
+import timeFormat from "../lib/timeFormat"
 import { useAppContext } from "../context/AppContext"
 import toast from "react-hot-toast"
 import { fetchRecommendations } from "../services/aiApis.js"
@@ -16,14 +15,16 @@ const navigate = useNavigate()
 const { id } = useParams()
 
 const [show,setShow] = useState(null)
-const [recommendations,setRecommendations] = useState([])
-const [loadingRecs,setLoadingRecs] = useState(false)
-const [isFavorite,setIsFavorite] = useState(false)
-const [isTrailerOpen,setIsTrailerOpen] = useState(false)
-
 const [reviews,setReviews] = useState([])
+const [stats,setStats] = useState(null)
 const [reviewText,setReviewText] = useState("")
 const [rating,setRating] = useState(5)
+
+const [recommendations,setRecommendations] = useState([])
+const [loadingRecs,setLoadingRecs] = useState(false)
+
+const [isFavorite,setIsFavorite] = useState(false)
+const [isTrailerOpen,setIsTrailerOpen] = useState(false)
 
 const {
 axios,
@@ -34,21 +35,18 @@ favoriteMovies,
 image_base_url
 } = useAppContext()
 
-/* ---------------- Fetch Movie ---------------- */
+/* ---------------- MOVIE ---------------- */
 
 const getShow = async(movieId)=>{
 try{
-
 const {data} = await axios.get(`/api/show/${movieId}`)
-
 if(data.success) setShow(data)
-
 }catch{
 toast.error("Failed to load movie")
 }
 }
 
-/* ---------------- Favorite ---------------- */
+/* ---------------- FAVORITE ---------------- */
 
 const handleFavorite = async()=>{
 if(!user) return toast.error("Login required")
@@ -70,14 +68,17 @@ toast.error("Favorite update failed")
 }
 }
 
-/* ---------------- Reviews ---------------- */
+/* ---------------- REVIEWS ---------------- */
 
 const fetchReviews = async()=>{
 try{
 
 const {data} = await axios.get(`/api/reviews/${id}`)
 
-if(data.success) setReviews(data.reviews)
+if(data.success){
+setReviews(data.reviews)
+setStats(data.stats)
+}
 
 }catch{
 console.log("Review API not ready")
@@ -113,7 +114,7 @@ toast.error("Review failed")
 }
 }
 
-/* ---------------- Share ---------------- */
+/* ---------------- SHARE ---------------- */
 
 const shareMovie = async()=>{
 
@@ -136,11 +137,7 @@ toast.success("Link copied")
 }catch{}
 }
 
-/* ---------------- Reminder ---------------- */
-
-const setReminder = ()=> toast.success("Reminder set 🔔")
-
-/* ---------------- AI Recommendations ---------------- */
+/* ---------------- AI RECOMMENDATIONS ---------------- */
 
 const loadAIRecommendations = async()=>{
 
@@ -162,7 +159,7 @@ _id:String(rec.id),
 setLoadingRecs(false)
 }
 
-/* ---------------- useEffect ---------------- */
+/* ---------------- EFFECT ---------------- */
 
 useEffect(()=>{
 
@@ -180,11 +177,13 @@ if(!show || !show.movie) return <Loading/>
 
 const movie = show.movie
 
+/* ================= UI ================= */
+
 return(
 
 <div className="px-6 md:px-16 lg:px-40 pt-32 text-white">
 
-{/* Movie Layout */}
+{/* Movie Info */}
 
 <div className="flex flex-col md:flex-row gap-10 max-w-6xl mx-auto">
 
@@ -218,8 +217,6 @@ className="w-64 rounded-xl shadow-xl"
 
 </p>
 
-{/* Buttons */}
-
 <div className="flex gap-4 mt-4">
 
 <button
@@ -239,7 +236,7 @@ className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 round
 <Share2 className="w-5 h-5"/>
 </button>
 
-<button onClick={setReminder} className="bg-gray-700 p-2 rounded-full">
+<button className="bg-gray-700 p-2 rounded-full">
 <Bell className="w-5 h-5"/>
 </button>
 
@@ -251,7 +248,7 @@ className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 round
 
 {/* Trailer */}
 
-{isTrailerOpen && (
+{isTrailerOpen &&(
 
 <div className="fixed inset-0 flex items-center justify-center bg-black/80 z-50">
 
@@ -280,11 +277,27 @@ className="absolute top-4 right-4 bg-gray-800 p-2 rounded-full"
 
 <DateSelect dateTime={show.dateTime} id={id}/>
 
-{/* Reviews */}
+{/* ================= REVIEWS ================= */}
 
 <div className="mt-20 max-w-4xl mx-auto">
 
 <h2 className="text-xl font-semibold mb-4">User Reviews</h2>
+
+{/* Rating summary */}
+
+{stats && (
+
+<div className="mb-6 text-gray-300">
+
+⭐ <span className="text-xl font-bold">{stats.averageRating}</span> / 5
+
+<span className="ml-2 text-gray-400">
+({stats.totalReviews} reviews)
+</span>
+
+</div>
+
+)}
 
 {/* Rating selector */}
 
@@ -295,7 +308,7 @@ className="absolute top-4 right-4 bg-gray-800 p-2 rounded-full"
 <StarIcon
 key={star}
 onClick={()=>setRating(star)}
-className={`w-7 h-7 cursor-pointer transition ${
+className={`w-7 h-7 cursor-pointer ${
 rating>=star
 ? "text-yellow-400 fill-yellow-400"
 : "text-gray-500"
@@ -315,44 +328,49 @@ className="w-full p-4 bg-gray-800 rounded-lg"
 
 <button
 onClick={submitReview}
-className="mt-4 px-6 py-2 bg-primary hover:bg-primary-dull rounded-lg"
+className="mt-4 px-6 py-2 bg-primary rounded-lg"
 >
 Submit Review
 </button>
 
-{/* Reviews list */}
+{/* Reviews List */}
 
 <div className="mt-8 space-y-6">
 
 {reviews.map(r=>(
 
-<div key={r._id} className="bg-gray-900 p-5 rounded-xl flex gap-4">
-
-{/* Avatar */}
+<div key={r._id} className="bg-[#0f172a] p-5 rounded-xl flex gap-4">
 
 <img
-src={r.userImage || "/avatar.png"}
+src={r.userImage || `https://ui-avatars.com/api/?name=${r.userName}`}
 alt="user"
-className="w-10 h-10 rounded-full"
+className="w-11 h-11 rounded-full object-cover"
 />
 
 <div className="flex-1">
 
 <div className="flex items-center gap-1 mb-1">
 
-{[...Array(r.rating)].map((_,i)=>(
-<StarIcon key={i} className="w-4 h-4 text-yellow-400 fill-yellow-400"/>
-))}
+{[1,2,3,4,5].map(star=>(
 
-<span className="text-gray-400 text-sm ml-2">{r.rating}/5</span>
+<StarIcon
+key={star}
+className={`w-4 h-4 ${
+star<=r.rating
+? "text-yellow-400 fill-yellow-400"
+: "text-gray-600"
+}`}
+/>
+
+))}
 
 </div>
 
-<p className="text-gray-300">{r.comment}</p>
+<p className="text-gray-200">{r.comment}</p>
 
-<div className="text-xs text-gray-500 mt-2 flex justify-between">
+<div className="flex justify-between text-xs text-gray-400 mt-2">
 
-<span>{r.userName || "Anonymous"}</span>
+<span>{r.userName}</span>
 
 <span>{new Date(r.createdAt).toLocaleDateString()}</span>
 
@@ -370,7 +388,9 @@ className="w-10 h-10 rounded-full"
 
 {/* Recommendations */}
 
-<p className="text-lg font-medium mt-20 mb-8">Recommended For You</p>
+<p className="text-lg font-medium mt-20 mb-8">
+Recommended For You
+</p>
 
 <div className="flex flex-wrap gap-8">
 

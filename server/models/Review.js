@@ -4,13 +4,15 @@ const reviewSchema = new mongoose.Schema(
 {
   movieId: {
     type: String,
-    required: true
+    required: true,
+    index: true
   },
 
   userId: {
-    type: String,   // ✅ must match User _id type
+    type: String,   // must match User _id
     required: true,
-    ref: "User"
+    ref: "User",
+    index: true
   },
 
   rating: {
@@ -21,13 +23,27 @@ const reviewSchema = new mongoose.Schema(
   },
 
   comment: {
-    type: String
+    type: String,
+    trim: true,
+    maxlength: 500
   }
 
 },
-{ timestamps: true }
-);
+{
+  timestamps: true
+}
+)
 
-const Review = mongoose.model("Review", reviewSchema);
+/* ===========================
+PREVENT DUPLICATE REVIEWS
+1 USER = 1 REVIEW PER MOVIE
+=========================== */
 
-export default Review;
+reviewSchema.index(
+  { movieId: 1, userId: 1 },
+  { unique: true }
+)
+
+const Review = mongoose.model("Review", reviewSchema)
+
+export default Review

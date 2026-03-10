@@ -19,11 +19,8 @@ export const addReview = async (req, res) => {
       })
     }
 
-    // Prevent duplicate review by same user
-    const existingReview = await Review.findOne({
-      movieId,
-      userId
-    })
+    // prevent duplicate review
+    const existingReview = await Review.findOne({ movieId, userId })
 
     if (existingReview) {
       return res.json({
@@ -34,7 +31,7 @@ export const addReview = async (req, res) => {
 
     const review = new Review({
       movieId,
-      rating,
+      rating: Number(rating),
       comment,
       userId
     })
@@ -48,7 +45,7 @@ export const addReview = async (req, res) => {
 
   } catch (error) {
 
-    console.error(error)
+    console.error("Add Review Error:", error)
 
     res.status(500).json({
       success: false,
@@ -72,6 +69,7 @@ export const getReviews = async (req, res) => {
 
     const reviews = await Review.find({ movieId: id })
       .sort({ createdAt: -1 })
+      .lean()
 
     const totalReviews = reviews.length
 
@@ -85,25 +83,31 @@ export const getReviews = async (req, res) => {
       5: 0
     }
 
-    // Add user details
-    const reviewsWithUser = await Promise.all(
+    // collect all userIds
+    const userIds = reviews.map(r => r.userId)
 
-      reviews.map(async (review) => {
+    const users = await User.find({ _id: { $in: userIds } }).lean()
 
-        const user = await User.findById(review.userId)
+    const userMap = {}
 
-        totalRating += review.rating
-        ratingDistribution[review.rating]++
+    users.forEach(user => {
+      userMap[user._id] = user
+    })
 
-        return {
-          ...review._doc,
-          userName: user?.name || "Anonymous",
-          userImage: user?.image || null
-        }
+    const reviewsWithUser = reviews.map(review => {
 
-      })
+      const user = userMap[review.userId]
 
-    )
+      totalRating += review.rating
+      ratingDistribution[review.rating]++
+
+      return {
+        ...review,
+        userName: user?.name || "Anonymous",
+        userImage: user?.image || null
+      }
+
+    })
 
     const averageRating =
       totalReviews > 0
@@ -122,7 +126,7 @@ export const getReviews = async (req, res) => {
 
   } catch (error) {
 
-    console.error(error)
+    console.error("Get Reviews Error:", error)
 
     res.status(500).json({
       success: false,
