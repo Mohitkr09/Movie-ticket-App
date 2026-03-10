@@ -12,6 +12,7 @@ import userRouter from './routes/userRoutes.js';
 import aiRouter from './routes/aiRoutes.js';
 import { stripeWebhooks } from './controllers/stripeWebhooks.js';
 import sendEmail from "./configs/nodeMailer.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -100,6 +101,7 @@ app.use("/api/booking", bookingRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/user", userRouter);
 app.use("/api/ai", aiRouter);
+app.use("/api/reviews", reviewRoutes);
 
 
 // -------------------------------
