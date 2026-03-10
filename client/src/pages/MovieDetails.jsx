@@ -17,6 +17,7 @@ const { id } = useParams()
 const [show,setShow] = useState(null)
 const [reviews,setReviews] = useState([])
 const [stats,setStats] = useState(null)
+
 const [reviewText,setReviewText] = useState("")
 const [rating,setRating] = useState(5)
 
@@ -35,20 +36,24 @@ favoriteMovies,
 image_base_url
 } = useAppContext()
 
-/* ---------------- MOVIE ---------------- */
+/* ================= MOVIE ================= */
 
 const getShow = async(movieId)=>{
 try{
+
 const {data} = await axios.get(`/api/show/${movieId}`)
+
 if(data.success) setShow(data)
+
 }catch{
 toast.error("Failed to load movie")
 }
 }
 
-/* ---------------- FAVORITE ---------------- */
+/* ================= FAVORITE ================= */
 
 const handleFavorite = async()=>{
+
 if(!user) return toast.error("Login required")
 
 try{
@@ -68,9 +73,10 @@ toast.error("Favorite update failed")
 }
 }
 
-/* ---------------- REVIEWS ---------------- */
+/* ================= REVIEWS ================= */
 
 const fetchReviews = async()=>{
+
 try{
 
 const {data} = await axios.get(`/api/reviews/${id}`)
@@ -114,7 +120,7 @@ toast.error("Review failed")
 }
 }
 
-/* ---------------- SHARE ---------------- */
+/* ================= SHARE ================= */
 
 const shareMovie = async()=>{
 
@@ -137,7 +143,7 @@ toast.success("Link copied")
 }catch{}
 }
 
-/* ---------------- AI RECOMMENDATIONS ---------------- */
+/* ================= AI RECOMMENDATIONS ================= */
 
 const loadAIRecommendations = async()=>{
 
@@ -159,7 +165,7 @@ _id:String(rec.id),
 setLoadingRecs(false)
 }
 
-/* ---------------- EFFECT ---------------- */
+/* ================= EFFECT ================= */
 
 useEffect(()=>{
 
@@ -183,14 +189,14 @@ return(
 
 <div className="px-6 md:px-16 lg:px-40 pt-32 text-white">
 
-{/* Movie Info */}
+{/* Movie Section */}
 
 <div className="flex flex-col md:flex-row gap-10 max-w-6xl mx-auto">
 
 <img
 src={movie.poster_path ? image_base_url+movie.poster_path : "/placeholder.jpg"}
 alt={movie.title}
-className="w-64 rounded-xl shadow-xl"
+className="w-64 rounded-xl shadow-lg"
 />
 
 <div className="flex flex-col gap-4">
@@ -246,7 +252,7 @@ className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 round
 
 </div>
 
-{/* Trailer */}
+{/* Trailer Modal */}
 
 {isTrailerOpen &&(
 
@@ -264,9 +270,7 @@ allowFullScreen
 onClick={()=>setIsTrailerOpen(false)}
 className="absolute top-4 right-4 bg-gray-800 p-2 rounded-full"
 >
-
 <X/>
-
 </button>
 
 </div>
@@ -283,9 +287,9 @@ className="absolute top-4 right-4 bg-gray-800 p-2 rounded-full"
 
 <h2 className="text-xl font-semibold mb-4">User Reviews</h2>
 
-{/* Rating summary */}
+{/* Average Rating */}
 
-{stats && (
+{stats &&(
 
 <div className="mb-6 text-gray-300">
 
@@ -299,7 +303,7 @@ className="absolute top-4 right-4 bg-gray-800 p-2 rounded-full"
 
 )}
 
-{/* Rating selector */}
+{/* Star Selector */}
 
 <div className="flex gap-2 mb-3">
 
@@ -341,6 +345,8 @@ Submit Review
 
 <div key={r._id} className="bg-[#0f172a] p-5 rounded-xl flex gap-4">
 
+{/* Avatar */}
+
 <img
 src={r.userImage || `https://ui-avatars.com/api/?name=${r.userName}`}
 alt="user"
@@ -348,6 +354,8 @@ className="w-11 h-11 rounded-full object-cover"
 />
 
 <div className="flex-1">
+
+{/* Stars */}
 
 <div className="flex items-center gap-1 mb-1">
 

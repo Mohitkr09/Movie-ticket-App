@@ -19,8 +19,18 @@ export const addReview = async (req, res) => {
       })
     }
 
-    // prevent duplicate review
-    const existingReview = await Review.findOne({ movieId, userId })
+    if (!movieId || !rating) {
+      return res.status(400).json({
+        success: false,
+        message: "MovieId and rating are required"
+      })
+    }
+
+    // Prevent duplicate review
+    const existingReview = await Review.findOne({
+      movieId,
+      userId
+    })
 
     if (existingReview) {
       return res.json({
@@ -83,7 +93,7 @@ export const getReviews = async (req, res) => {
       5: 0
     }
 
-    // collect all userIds
+    // Collect all userIds
     const userIds = reviews.map(r => r.userId)
 
     const users = await User.find({ _id: { $in: userIds } }).lean()
