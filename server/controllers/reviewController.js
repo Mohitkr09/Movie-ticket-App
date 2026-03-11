@@ -1,5 +1,5 @@
 import Review from "../models/Review.js"
-import User from "../models/User.js"
+import { clerkClient } from "@clerk/express"
 
 /* ===========================
 ADD REVIEW
@@ -33,7 +33,7 @@ export const addReview = async (req, res) => {
       })
     }
 
-    // Prevent duplicate review
+    // prevent duplicate review
     const existingReview = await Review.findOne({
       movieId,
       userId
@@ -99,36 +99,33 @@ export const getReviews = async (req, res) => {
       5: 0
     }
 
-    // Get all userIds
-    const userIds = reviews.map(r => r.userId)
+    /* ===========================
+    GET USER DETAILS FROM CLERK
+    =========================== */
 
-    const users = await User.find({
-      _id: { $in: userIds }
-    }).lean()
+    const reviewsWithUser = await Promise.all(
 
-    const userMap = {}
+      reviews.map(async (review) => {
 
-    users.forEach(user => {
-      userMap[user._id.toString()] = user
-    })
+        const user = await clerkClient.users.getUser(review.userId)
 
-    const reviewsWithUser = reviews.map(review => {
+        totalRating += review.rating
 
-      const user = userMap[review.userId?.toString()]
+        if (ratingDistribution[review.rating] !== undefined) {
+          ratingDistribution[review.rating]++
+        }
 
-      totalRating += review.rating
+        return {
+          ...review,
+          userName:
+            `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
+            "Anonymous",
+          userImage: user?.imageUrl || null
+        }
 
-      if (ratingDistribution[review.rating] !== undefined) {
-        ratingDistribution[review.rating]++
-      }
+      })
 
-      return {
-        ...review,
-        userName: user?.name || "Anonymous",
-        userImage: user?.image || null
-      }
-
-    })
+    )
 
     const averageRating =
       totalReviews > 0
