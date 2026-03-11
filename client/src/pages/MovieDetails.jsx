@@ -36,19 +36,27 @@ favoriteMovies,
 image_base_url
 } = useAppContext()
 
+
 /* ================= MOVIE ================= */
 
 const getShow = async(movieId)=>{
+
 try{
 
 const {data} = await axios.get(`/api/show/${movieId}`)
 
-if(data.success) setShow(data)
+if(data.success){
+setShow(data)
+}
 
-}catch{
+}catch(err){
+
 toast.error("Failed to load movie")
+
 }
+
 }
+
 
 /* ================= FAVORITE ================= */
 
@@ -58,20 +66,58 @@ if(!user) return toast.error("Login required")
 
 try{
 
-setIsFavorite(prev=>!prev)
-
 const {data} = await axios.post(
 "/api/user/update-favorite",
 {movieId:id},
 {headers:{Authorization:`Bearer ${await getToken()}`}}
 )
 
-if(data.success) await fetchFavoriteMovies()
+if(data.success){
+
+setIsFavorite(prev=>!prev)
+fetchFavoriteMovies()
+
+toast.success("Favorite updated")
+
+}
 
 }catch{
+
 toast.error("Favorite update failed")
+
 }
+
 }
+
+
+/* ================= NOTIFICATION ================= */
+
+const handleNotification = async()=>{
+
+if(!user) return toast.error("Login required")
+
+try{
+
+const {data} = await axios.post(
+"/api/user/notify",
+{movieId:id},
+{headers:{Authorization:`Bearer ${await getToken()}`}}
+)
+
+if(data.success){
+
+toast.success("Notification enabled 🔔")
+
+}
+
+}catch{
+
+toast.error("Notification failed")
+
+}
+
+}
+
 
 /* ================= REVIEWS ================= */
 
@@ -82,26 +128,40 @@ try{
 const {data} = await axios.get(`/api/reviews/${id}`)
 
 if(data.success){
-setReviews(data.reviews)
-setStats(data.stats)
+
+setReviews(data.reviews || [])
+setStats(data.stats || null)
+
 }
 
 }catch{
-console.log("Review API not ready")
+
+console.log("Review API error")
+
 }
+
 }
+
 
 const submitReview = async()=>{
 
 if(!user) return toast.error("Login required")
-if(!reviewText) return toast.error("Write a review")
+
+if(!reviewText.trim())
+return toast.error("Write a review")
 
 try{
 
 const {data} = await axios.post(
 "/api/reviews",
-{movieId:id,rating,comment:reviewText},
-{headers:{Authorization:`Bearer ${await getToken()}`}}
+{
+movieId:id,
+rating,
+comment:reviewText
+},
+{
+headers:{Authorization:`Bearer ${await getToken()}`}
+}
 )
 
 if(data.success){
@@ -113,12 +173,20 @@ setRating(5)
 
 fetchReviews()
 
+}else{
+
+toast.error(data.message)
+
 }
 
 }catch{
+
 toast.error("Review failed")
+
 }
+
 }
+
 
 /* ================= SHARE ================= */
 
@@ -141,17 +209,21 @@ toast.success("Link copied")
 }
 
 }catch{}
+
 }
+
 
 /* ================= AI RECOMMENDATIONS ================= */
 
 const loadAIRecommendations = async()=>{
 
+try{
+
 setLoadingRecs(true)
 
 const data = await fetchRecommendations(id)
 
-if(data?.recommendations?.length>0){
+if(data?.recommendations){
 
 setRecommendations(
 data.recommendations.map(rec=>({
@@ -162,8 +234,16 @@ _id:String(rec.id),
 
 }
 
-setLoadingRecs(false)
+}catch{
+
+console.log("AI recommendation failed")
+
 }
+
+setLoadingRecs(false)
+
+}
+
 
 /* ================= EFFECT ================= */
 
@@ -175,13 +255,22 @@ getShow(id)
 fetchReviews()
 loadAIRecommendations()
 
-setIsFavorite(favoriteMovies.some(fav=>fav._id===id))
+},[id])
 
-},[id,favoriteMovies])
+
+useEffect(()=>{
+
+setIsFavorite(
+favoriteMovies.some(fav=>fav._id===id)
+)
+
+},[favoriteMovies,id])
+
 
 if(!show || !show.movie) return <Loading/>
 
 const movie = show.movie
+
 
 /* ================= UI ================= */
 
@@ -223,6 +312,9 @@ className="w-64 rounded-xl shadow-lg"
 
 </p>
 
+
+{/* ACTION BUTTONS */}
+
 <div className="flex gap-4 mt-4">
 
 <button
@@ -231,19 +323,27 @@ onClick={()=> movie.trailerKey
 : toast.error("Trailer not available")}
 className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded"
 >
+
 <PlayCircleIcon className="w-5 h-5"/> Trailer
+
 </button>
 
 <button onClick={handleFavorite} className="bg-gray-700 p-2 rounded-full">
+
 <Heart className={`w-5 h-5 ${isFavorite ? "fill-primary text-primary":""}`}/>
+
 </button>
 
 <button onClick={shareMovie} className="bg-gray-700 p-2 rounded-full">
+
 <Share2 className="w-5 h-5"/>
+
 </button>
 
-<button className="bg-gray-700 p-2 rounded-full">
+<button onClick={handleNotification} className="bg-gray-700 p-2 rounded-full">
+
 <Bell className="w-5 h-5"/>
+
 </button>
 
 </div>
@@ -252,7 +352,8 @@ className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 round
 
 </div>
 
-{/* Trailer Modal */}
+
+{/* TRAILER MODAL */}
 
 {isTrailerOpen &&(
 
@@ -270,7 +371,9 @@ allowFullScreen
 onClick={()=>setIsTrailerOpen(false)}
 className="absolute top-4 right-4 bg-gray-800 p-2 rounded-full"
 >
+
 <X/>
+
 </button>
 
 </div>
@@ -279,7 +382,9 @@ className="absolute top-4 right-4 bg-gray-800 p-2 rounded-full"
 
 )}
 
+
 <DateSelect dateTime={show.dateTime} id={id}/>
+
 
 {/* ================= REVIEWS ================= */}
 
@@ -287,7 +392,6 @@ className="absolute top-4 right-4 bg-gray-800 p-2 rounded-full"
 
 <h2 className="text-xl font-semibold mb-4">User Reviews</h2>
 
-{/* Average Rating */}
 
 {stats &&(
 
@@ -296,14 +400,17 @@ className="absolute top-4 right-4 bg-gray-800 p-2 rounded-full"
 ⭐ <span className="text-xl font-bold">{stats.averageRating}</span> / 5
 
 <span className="ml-2 text-gray-400">
+
 ({stats.totalReviews} reviews)
+
 </span>
 
 </div>
 
 )}
 
-{/* Star Selector */}
+
+{/* STAR SELECTOR */}
 
 <div className="flex gap-2 mb-3">
 
@@ -323,6 +430,7 @@ rating>=star
 
 </div>
 
+
 <textarea
 value={reviewText}
 onChange={(e)=>setReviewText(e.target.value)}
@@ -330,14 +438,18 @@ placeholder="Write your review..."
 className="w-full p-4 bg-gray-800 rounded-lg"
 />
 
+
 <button
 onClick={submitReview}
 className="mt-4 px-6 py-2 bg-primary rounded-lg"
 >
+
 Submit Review
+
 </button>
 
-{/* Reviews List */}
+
+{/* REVIEWS LIST */}
 
 <div className="mt-8 space-y-6">
 
@@ -345,19 +457,15 @@ Submit Review
 
 <div key={r._id} className="bg-[#0f172a] p-5 rounded-xl flex gap-4">
 
-{/* Avatar */}
-
 <img
 src={r.userImage || `https://ui-avatars.com/api/?name=${r.userName}`}
 alt="user"
-className="w-11 h-11 rounded-full object-cover"
+className="w-11 h-11 rounded-full"
 />
 
 <div className="flex-1">
 
-{/* Stars */}
-
-<div className="flex items-center gap-1 mb-1">
+<div className="flex gap-1 mb-1">
 
 {[1,2,3,4,5].map(star=>(
 
@@ -394,16 +502,20 @@ star<=r.rating
 
 </div>
 
-{/* Recommendations */}
+
+{/* AI RECOMMENDATIONS */}
 
 <p className="text-lg font-medium mt-20 mb-8">
+
 Recommended For You
+
 </p>
+
 
 <div className="flex flex-wrap gap-8">
 
 {loadingRecs
-? "Loading..."
+? <Loading/>
 : recommendations.map(rec=>(
 <MovieCard key={rec._id} movie={rec}/>
 ))}
