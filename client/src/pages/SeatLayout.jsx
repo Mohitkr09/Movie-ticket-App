@@ -81,9 +81,6 @@ const SeatLayout = () => {
 
   }
 
-  /* =========================
-  LOCK SEATS
-  ========================= */
 
   const lockSeats = async (seats) => {
 
@@ -108,9 +105,6 @@ const SeatLayout = () => {
 
   }
 
-  /* =========================
-  SEAT CLICK
-  ========================= */
 
   const handleSeatClick = async (seatId) => {
 

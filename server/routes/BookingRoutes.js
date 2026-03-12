@@ -1,15 +1,15 @@
-import express from "express"
+import express from "express";
 
 import {
   createBooking,
   getOccupiedSeats,
   getUserBookings,
   lockSeats
-} from "../controllers/bookingController.js"
+} from "../controllers/bookingController.js";
 
-import { protectAdmin } from "../middleware/auth.js"
+import { protect } from "../middleware/auth.js";
 
-const bookingRouter = express.Router()
+const bookingRouter = express.Router();
 
 /* =====================================================
 CREATE BOOKING
@@ -17,9 +17,9 @@ CREATE BOOKING
 
 bookingRouter.post(
   "/create",
-  protectAdmin,
+  protect,
   createBooking
-)
+);
 
 /* =====================================================
 LOCK SEATS (TEMPORARY 5 MINUTE HOLD)
@@ -27,9 +27,9 @@ LOCK SEATS (TEMPORARY 5 MINUTE HOLD)
 
 bookingRouter.post(
   "/lock-seats",
-  protectAdmin,
+  protect,
   lockSeats
-)
+);
 
 /* =====================================================
 GET OCCUPIED SEATS
@@ -38,7 +38,7 @@ GET OCCUPIED SEATS
 bookingRouter.get(
   "/seats/:showId",
   getOccupiedSeats
-)
+);
 
 /* =====================================================
 GET USER BOOKINGS
@@ -46,8 +46,8 @@ GET USER BOOKINGS
 
 bookingRouter.get(
   "/my-bookings",
- protectAdmin,
+  protect,
   getUserBookings
-)
+);
 
-export default bookingRouter
+export default bookingRouter;
