@@ -7,9 +7,16 @@ const bookingSchema = new mongoose.Schema(
     ========================= */
 
     user: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      type: String, // Clerk userId
       required: true
+    },
+
+    userEmail: {
+      type: String
+    },
+
+    userName: {
+      type: String
     },
 
     /* =========================
@@ -87,17 +94,15 @@ const bookingSchema = new mongoose.Schema(
       default: "pending"
     },
 
-    /* =========================
-       QR TICKET
-    ========================= */
 
     ticketQRCode: {
       type: String
     }
-
   },
 
-  { timestamps: true }
+  {
+    timestamps: true
+  }
 );
 
 const Booking = mongoose.model("Booking", bookingSchema);
