@@ -1,8 +1,53 @@
-import express from 'express';
-import { createBooking, getOccupiedSeats } from '../controllers/bookingController.js';
+import express from "express"
 
-const bookingRouter = express.Router();
+import {
+  createBooking,
+  getOccupiedSeats,
+  getUserBookings,
+  lockSeats
+} from "../controllers/bookingController.js"
 
-bookingRouter.post('/create',createBooking);
-bookingRouter.get('/seats/:showId',getOccupiedSeats);
-export default bookingRouter;
+import { protectAdmin } from "../middleware/auth.js"
+
+const bookingRouter = express.Router()
+
+/* =====================================================
+CREATE BOOKING
+===================================================== */
+
+bookingRouter.post(
+  "/create",
+  protectAdmin,
+  createBooking
+)
+
+/* =====================================================
+LOCK SEATS (TEMPORARY 5 MINUTE HOLD)
+===================================================== */
+
+bookingRouter.post(
+  "/lock-seats",
+  protectAdmin,
+  lockSeats
+)
+
+/* =====================================================
+GET OCCUPIED SEATS
+===================================================== */
+
+bookingRouter.get(
+  "/seats/:showId",
+  getOccupiedSeats
+)
+
+/* =====================================================
+GET USER BOOKINGS
+===================================================== */
+
+bookingRouter.get(
+  "/my-bookings",
+ protectAdmin,
+  getUserBookings
+)
+
+export default bookingRouter

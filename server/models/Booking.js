@@ -1,14 +1,105 @@
 import mongoose from "mongoose";
 
-const bookingSchema = new mongoose.Schema({
-  user:{type:String,required:true,ref:'User'},
-  show:{type:String,required:true,ref:'Show'},
-  amount:{type:Number,required:true},
-  bookedSeats:{type:Array,required:true},
-  isPaid:{type:Boolean ,default:false},
-  paymentLink:{type:String},
+const bookingSchema = new mongoose.Schema(
+  {
+    /* =========================
+       USER
+    ========================= */
 
-},{timestamps:true})
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
 
-const Booking = mongoose.model("Booking",bookingSchema);
+    /* =========================
+       SHOW
+    ========================= */
+
+    show: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Show",
+      required: true
+    },
+
+    /* =========================
+       SEATS
+    ========================= */
+
+    bookedSeats: [
+      {
+        seatNumber: {
+          type: String,
+          required: true
+        },
+
+        type: {
+          type: String,
+          enum: ["regular", "premium"],
+          default: "regular"
+        }
+      }
+    ],
+
+    /* =========================
+       PAYMENT
+    ========================= */
+
+    amount: {
+      type: Number,
+      required: true
+    },
+
+    currency: {
+      type: String,
+      default: "INR"
+    },
+
+    isPaid: {
+      type: Boolean,
+      default: false
+    },
+
+    paymentLink: {
+      type: String
+    },
+
+    paymentIntentId: {
+      type: String
+    },
+
+    /* =========================
+       SEAT LOCK SYSTEM
+    ========================= */
+
+    lockExpiresAt: {
+      type: Date
+    },
+
+    status: {
+      type: String,
+      enum: [
+        "pending",
+        "locked",
+        "confirmed",
+        "cancelled"
+      ],
+      default: "pending"
+    },
+
+    /* =========================
+       QR TICKET
+    ========================= */
+
+    ticketQRCode: {
+      type: String
+    }
+
+  },
+
+  { timestamps: true }
+);
+
+const Booking = mongoose.model("Booking", bookingSchema);
+
 export default Booking;

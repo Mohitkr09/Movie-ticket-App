@@ -1,85 +1,118 @@
-import express from "express";
-import cors from "cors";
-import "dotenv/config";
-import connectDB from "./configs/db.js";
-import { clerkMiddleware } from "@clerk/express";
-import { serve } from "inngest/express";
-import { inngest, functions } from "./inngest/index.js";
-import http from "http";
-import { Server } from "socket.io";
+import express from "express"
+import cors from "cors"
+import "dotenv/config"
+import connectDB from "./configs/db.js"
+import { clerkMiddleware } from "@clerk/express"
+import { serve } from "inngest/express"
+import { inngest, functions } from "./inngest/index.js"
+import http from "http"
+import { Server } from "socket.io"
 
-import showRouter from "./routes/showRoutes.js";
-import bookingRouter from "./routes/BookingRoutes.js";
-import adminRouter from "./routes/adminRoutes.js";
-import userRouter from "./routes/userRoutes.js";
-import aiRouter from "./routes/aiRoutes.js";
-import reviewRoutes from "./routes/reviewRoutes.js";
+/* ROUTES */
+import showRouter from "./routes/showRoutes.js"
+import bookingRouter from "./routes/BookingRoutes.js"
+import adminRouter from "./routes/adminRoutes.js"
+import userRouter from "./routes/userRoutes.js"
+import aiRouter from "./routes/aiRoutes.js"
+import reviewRoutes from "./routes/reviewRoutes.js"
 
-import { stripeWebhooks } from "./controllers/stripeWebhooks.js";
-import sendEmail from "./configs/nodeMailer.js";
+/* CONTROLLERS */
+import { stripeWebhooks } from "./controllers/stripeWebhooks.js"
 
-
-/* ======================================================
-APP SETUP
-====================================================== */
-
-const app = express();
-const port = process.env.PORT || 3000;
+/* SERVICES */
+import sendEmail from "./configs/nodeMailer.js"
 
 
 /* ======================================================
-CREATE HTTP SERVER (for socket support)
+APP INITIALIZATION
 ====================================================== */
 
-const server = http.createServer(app);
+const app = express()
+const port = process.env.PORT || 3000
+
+
+/* ======================================================
+CREATE HTTP SERVER (Required for Socket.IO)
+====================================================== */
+
+const server = http.createServer(app)
+
+
+/* ======================================================
+SOCKET.IO SETUP
+====================================================== */
 
 export const io = new Server(server, {
   cors: {
     origin: "*",
-    credentials: true
+    methods: ["GET", "POST"]
   }
-});
+})
 
 
 /* ======================================================
-SOCKET CONNECTION
+SOCKET CONNECTION HANDLER
 ====================================================== */
 
 io.on("connection", (socket) => {
 
-  console.log("🟢 Socket connected:", socket.id);
+  console.log("🟢 User connected:", socket.id)
 
-  socket.on("join-movie", (movieId) => {
-    socket.join(movieId);
-  });
+  /* Join specific show room */
+  socket.on("join-show", (showId) => {
+
+    socket.join(showId)
+
+    console.log(`User joined show room: ${showId}`)
+
+  })
+
+
+  /* Seat lock broadcast */
+  socket.on("lock-seat", ({ showId, seat }) => {
+
+    socket.to(showId).emit("seat-locked", seat)
+
+  })
+
+
+  /* Seat booking broadcast */
+  socket.on("seat-booked", ({ showId, seat }) => {
+
+    socket.to(showId).emit("seat-booked-update", seat)
+
+  })
+
 
   socket.on("disconnect", () => {
-    console.log("🔴 Socket disconnected:", socket.id);
-  });
 
-});
+    console.log("🔴 User disconnected:", socket.id)
+
+  })
+
+})
 
 
 /* ======================================================
 CONNECT DATABASE
 ====================================================== */
 
-await connectDB();
+await connectDB()
 
 
 /* ======================================================
-STRIPE WEBHOOK (RAW BODY)
+STRIPE WEBHOOK (RAW BODY REQUIRED)
 ====================================================== */
 
 app.post(
   "/api/stripe/webhook",
   express.raw({ type: "application/json" }),
   stripeWebhooks
-);
+)
 
 
 /* ======================================================
-CORS CONFIG
+ALLOWED CORS ORIGINS
 ====================================================== */
 
 const allowedOrigins = [
@@ -89,37 +122,43 @@ const allowedOrigins = [
   "https://movie-ticket-app-jz7m.vercel.app",
   "https://movie-ticket-app-zi7g.vercel.app",
   "https://movie-ticket-app-14.onrender.com"
-];
+]
+
+
+/* ======================================================
+CORS MIDDLEWARE
+====================================================== */
 
 app.use(
   cors({
     origin: (origin, callback) => {
 
-      if (!origin) return callback(null, true);
+      if (!origin) return callback(null, true)
 
       if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
+        return callback(null, true)
       }
 
-      return callback(new Error("Not allowed by CORS"));
+      return callback(new Error("❌ Not allowed by CORS"))
+
     },
     credentials: true
   })
-);
+)
 
 
 /* ======================================================
-JSON PARSER
+BODY PARSER
 ====================================================== */
 
-app.use(express.json());
+app.use(express.json())
 
 
 /* ======================================================
-CLERK AUTH
+CLERK AUTHENTICATION
 ====================================================== */
 
-app.use(clerkMiddleware());
+app.use(clerkMiddleware())
 
 
 /* ======================================================
@@ -127,12 +166,14 @@ HEALTH CHECK
 ====================================================== */
 
 app.get("/", (req, res) => {
-  res.send("🚀 Movie Ticket Server Running");
-});
+
+  res.send("🚀 Movie Ticket API Running")
+
+})
 
 
 /* ======================================================
-TEST EMAIL ROUTE
+EMAIL TEST ROUTE
 ====================================================== */
 
 app.get("/test-email", async (req, res) => {
@@ -142,43 +183,43 @@ app.get("/test-email", async (req, res) => {
     await sendEmail({
       to: "mkr27858@gmail.com",
       subject: "QuickShow Test Email",
-      body: "<h1>Test email success!</h1>"
-    });
+      body: "<h1>Email system working successfully!</h1>"
+    })
 
-    res.send("EMAIL SENT ✔");
+    res.send("✅ EMAIL SENT SUCCESSFULLY")
 
   } catch (error) {
 
-    console.error("Email Error:", error);
+    console.error("Email Error:", error)
 
-    res.status(500).send("FAILED ❌");
+    res.status(500).send("❌ EMAIL FAILED")
 
   }
 
-});
+})
 
 
 /* ======================================================
 API ROUTES
 ====================================================== */
 
-app.use("/api/inngest", serve({ client: inngest, functions }));
+app.use("/api/inngest", serve({ client: inngest, functions }))
 
-app.use("/api/show", showRouter);
+app.use("/api/show", showRouter)
 
-app.use("/api/booking", bookingRouter);
+app.use("/api/booking", bookingRouter)
 
-app.use("/api/admin", adminRouter);
+app.use("/api/admin", adminRouter)
 
-app.use("/api/user", userRouter);
+app.use("/api/user", userRouter)
 
-app.use("/api/ai", aiRouter);
+app.use("/api/ai", aiRouter)
 
-app.use("/api/reviews", reviewRoutes);
+app.use("/api/reviews", reviewRoutes)
 
 
 /* ======================================================
-404 HANDLER
+404 ROUTE HANDLER
 ====================================================== */
 
 app.use((req, res) => {
@@ -186,9 +227,9 @@ app.use((req, res) => {
   res.status(404).json({
     success: false,
     message: "API route not found"
-  });
+  })
 
-});
+})
 
 
 /* ======================================================
@@ -197,14 +238,14 @@ GLOBAL ERROR HANDLER
 
 app.use((err, req, res, next) => {
 
-  console.error("Server Error:", err);
+  console.error("🔥 Server Error:", err)
 
   res.status(500).json({
     success: false,
     message: "Internal Server Error"
-  });
+  })
 
-});
+})
 
 
 /* ======================================================
@@ -213,6 +254,6 @@ START SERVER
 
 server.listen(port, () => {
 
-  console.log(`✅ Server running on http://localhost:${port}`);
+  console.log(`✅ Server running on http://localhost:${port}`)
 
-});
+})
