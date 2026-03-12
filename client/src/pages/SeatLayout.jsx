@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams } from "react-router-dom"
 import { ArrowRightIcon, ClockIcon } from "lucide-react"
 
 import BlurCircle from "../components/BlurCircle"
@@ -20,14 +20,11 @@ const premiumRows = ["A","B"]
 const SeatLayout = () => {
 
 const { id, date } = useParams()
-const navigate = useNavigate()
 
 const {
 axios,
 getToken,
 user,
-fetchFavoriteMovies,
-favoriteMovies,
 image_base_url
 } = useAppContext()
 
@@ -168,6 +165,10 @@ if(data.success){
 
 window.location.href = data.url
 
+}else{
+
+toast.error(data.message)
+
 }
 
 }catch{
@@ -192,6 +193,7 @@ if(prev<=1){
 
 setSelectedSeats([])
 toast("Seat reservation expired")
+
 return 300
 
 }
@@ -225,6 +227,24 @@ if(!show || !show.movie) return <Loading/>
 const movie = show.movie
 
 const showTimes = show.dateTime?.[date] || []
+
+/* ================= PRICE CALCULATION ================= */
+
+const basePrice = show.showPrice || 0
+
+const calculateSeatPrice = (seat)=>{
+
+if(premiumRows.includes(seat[0]))
+return basePrice * 1.5
+
+return basePrice
+
+}
+
+const totalPrice = selectedSeats.reduce(
+(sum,seat)=> sum + calculateSeatPrice(seat),
+0
+)
 
 /* ================= SEAT RENDER ================= */
 
@@ -309,9 +329,7 @@ className="w-64 rounded-xl shadow-lg"
 <div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
 
 <h3 className="font-semibold mb-3">
-
 Available Timings
-
 </h3>
 
 <div className="flex flex-wrap gap-2">
@@ -324,8 +342,8 @@ onClick={()=>setSelectedTime(t)}
 className={`flex items-center gap-2 px-4 py-2 rounded-md cursor-pointer transition
 ${selectedTime?.time===t.time
 ? "bg-primary text-white"
-: "hover:bg-primary/20"
-}`}
+: "hover:bg-primary/20"}
+`}
 >
 
 <ClockIcon className="w-4 h-4"/>
@@ -355,48 +373,13 @@ ${selectedTime?.time===t.time
 <div className="mb-6 bg-gray-900 border border-gray-800 rounded-lg px-6 py-3 text-center">
 
 <p className="text-sm text-gray-400">
-
 Seat reservation expires in
-
 </p>
 
 <p className="text-lg font-semibold text-primary">
-
 {Math.floor(timeLeft/60)}:
 {(timeLeft%60).toString().padStart(2,"0")}
-
 </p>
-
-</div>
-
-{/* LEGEND */}
-
-<div className="flex flex-wrap justify-center gap-6 mb-6 text-sm text-gray-300">
-
-<div className="flex items-center gap-2">
-<div className="w-4 h-4 border border-primary rounded"></div>
-Available
-</div>
-
-<div className="flex items-center gap-2">
-<div className="w-4 h-4 bg-blue-500 rounded"></div>
-Selected
-</div>
-
-<div className="flex items-center gap-2">
-<div className="w-4 h-4 bg-red-500 rounded"></div>
-Booked
-</div>
-
-<div className="flex items-center gap-2">
-<div className="w-4 h-4 bg-gray-400 rounded"></div>
-Locked
-</div>
-
-<div className="flex items-center gap-2">
-<div className="w-4 h-4 bg-yellow-400 rounded"></div>
-Premium
-</div>
 
 </div>
 
@@ -410,9 +393,7 @@ className="mx-auto max-w-md"
 />
 
 <p className="text-center text-gray-400 text-sm mt-2">
-
 All eyes this way please 👀
-
 </p>
 
 </div>
@@ -435,35 +416,36 @@ All eyes this way please 👀
 
 {/* SUMMARY */}
 
-<div className="mt-8 bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+<div className="mt-8 bg-gray-900 border border-gray-800 rounded-xl p-6 text-center w-full max-w-md">
 
 <p className="text-gray-400 text-sm">
-
 Selected Seats
-
 </p>
 
 <p className="text-lg font-semibold mt-1">
-
 {selectedSeats.length
 ? selectedSeats.join(", ")
 : "None"}
-
 </p>
 
 <p className="text-gray-400 text-sm mt-3">
+Total Tickets: {selectedSeats.length}
+</p>
 
-Total Seats: {selectedSeats.length}
-
+<p className="text-primary font-semibold mt-2 text-lg">
+Total Price: ₹{totalPrice}
 </p>
 
 </div>
 
-{/* CHECKOUT */}
-
 <button
 onClick={bookTickets}
-className="mt-10 px-12 py-3 bg-primary hover:bg-primary-dull rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-all"
+disabled={!selectedSeats.length}
+className={`mt-10 px-12 py-3 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg transition-all
+${selectedSeats.length
+? "bg-primary hover:bg-primary-dull hover:scale-105"
+: "bg-gray-700 cursor-not-allowed"}
+`}
 >
 
 Proceed to Checkout
@@ -474,12 +456,10 @@ Proceed to Checkout
 
 </div>
 
-):(
+):( 
 
 <p className="text-gray-400 text-center text-lg">
-
 Select a showtime to view seats
-
 </p>
 
 )}
