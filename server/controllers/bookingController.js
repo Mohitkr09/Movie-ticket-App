@@ -27,7 +27,8 @@ const checkSeatsAvailability = async (showId, selectedSeats) => {
 
   } catch (error) {
 
-    console.log(error.message)
+    console.log("Seat check error:", error.message)
+
     return false
 
   }
@@ -44,39 +45,42 @@ export const lockSeats = async (req, res) => {
   try {
 
     const { showId, seats } = req.body
-    const { userId } = req.auth()
+    const userId = req.auth?.userId
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      })
+    }
 
     const showData = await Show.findById(showId)
 
     if (!showData) {
-
       return res.json({
         success: false,
         message: "Show not found"
       })
-
     }
 
-    const occupiedSeats = showData.occupiedSeats || {}
+    if (!showData.occupiedSeats) {
+      showData.occupiedSeats = {}
+    }
 
-    const isTaken = seats.some(seat => occupiedSeats[seat])
+    const isTaken = seats.some(
+      seat => showData.occupiedSeats[seat]
+    )
 
     if (isTaken) {
-
       return res.json({
         success: false,
         message: "Seat already locked"
       })
-
     }
 
     seats.forEach(seat => {
-
-      occupiedSeats[seat] = userId
-
+      showData.occupiedSeats[seat] = userId
     })
-
-    showData.occupiedSeats = occupiedSeats
 
     showData.markModified("occupiedSeats")
 
@@ -89,7 +93,7 @@ export const lockSeats = async (req, res) => {
 
   } catch (error) {
 
-    console.log(error.message)
+    console.log("Lock seat error:", error)
 
     res.status(500).json({
       success: false,
@@ -109,28 +113,29 @@ export const createBooking = async (req, res) => {
 
   try {
 
-    const { userId } = req.auth()
-
+    const userId = req.auth?.userId
     const { showId, selectedSeats } = req.body
-
     const { origin } = req.headers
 
-    if (!selectedSeats || selectedSeats.length === 0) {
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      })
+    }
 
+    if (!selectedSeats || selectedSeats.length === 0) {
       return res.json({
         success: false,
         message: "No seats selected"
       })
-
     }
 
     if (selectedSeats.length > 5) {
-
       return res.json({
         success: false,
         message: "Maximum 5 seats allowed"
       })
-
     }
 
     const isAvailable = await checkSeatsAvailability(
@@ -139,12 +144,10 @@ export const createBooking = async (req, res) => {
     )
 
     if (!isAvailable) {
-
       return res.json({
         success: false,
         message: "Selected seats are already booked"
       })
-
     }
 
     const showData = await Show
@@ -152,15 +155,26 @@ export const createBooking = async (req, res) => {
       .populate("movie")
 
     if (!showData) {
-
       return res.json({
         success: false,
         message: "Show not found"
       })
+    }
 
+    if (!showData.occupiedSeats) {
+      showData.occupiedSeats = {}
     }
 
     const amount = showData.showPrice * selectedSeats.length
+
+    /* ===== Stripe minimum amount protection ===== */
+
+    if (amount < 30) {
+      return res.json({
+        success: false,
+        message: "Minimum booking amount must be ₹30"
+      })
+    }
 
     const booking = await Booking.create({
 
@@ -185,18 +199,19 @@ export const createBooking = async (req, res) => {
 
     })
 
+    /* ===== Lock seats ===== */
+
     selectedSeats.forEach(seat => {
-
       showData.occupiedSeats[seat] = userId
-
     })
 
     showData.markModified("occupiedSeats")
 
     await showData.save()
 
-    const line_items = [
+    /* ===== Stripe checkout ===== */
 
+    const line_items = [
       {
         price_data: {
 
@@ -211,15 +226,12 @@ export const createBooking = async (req, res) => {
         },
 
         quantity: 1
-
       }
-
     ]
 
     const session = await stripe.checkout.sessions.create({
 
       success_url: `${origin}/loading/my-bookings`,
-
       cancel_url: `${origin}/my-bookings`,
 
       line_items,
@@ -227,9 +239,7 @@ export const createBooking = async (req, res) => {
       mode: "payment",
 
       metadata: {
-
         bookingId: booking._id.toString()
-
       },
 
       expires_at: Math.floor(
@@ -242,14 +252,14 @@ export const createBooking = async (req, res) => {
 
     await booking.save()
 
+    /* ===== Background payment check ===== */
+
     await inngest.send({
 
       name: "app/checkpayment",
 
       data: {
-
         bookingId: booking._id.toString()
-
       }
 
     })
@@ -261,7 +271,7 @@ export const createBooking = async (req, res) => {
 
   } catch (error) {
 
-    console.log(error.message)
+    console.log("Create booking error:", error)
 
     res.status(500).json({
       success: false,
@@ -286,12 +296,10 @@ export const getOccupiedSeats = async (req, res) => {
     const showData = await Show.findById(showId)
 
     if (!showData) {
-
       return res.json({
         success: false,
         message: "Show not found"
       })
-
     }
 
     const occupiedSeats = Object.keys(
@@ -299,21 +307,17 @@ export const getOccupiedSeats = async (req, res) => {
     )
 
     res.json({
-
       success: true,
       occupiedSeats
-
     })
 
   } catch (error) {
 
-    console.log(error.message)
+    console.log("Occupied seat error:", error)
 
     res.status(500).json({
-
       success: false,
       message: error.message
-
     })
 
   }
@@ -329,7 +333,14 @@ export const getUserBookings = async (req, res) => {
 
   try {
 
-    const { userId } = req.auth()
+    const userId = req.auth?.userId
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized"
+      })
+    }
 
     const bookings = await Booking
       .find({ user: userId })
@@ -342,21 +353,17 @@ export const getUserBookings = async (req, res) => {
       .sort({ createdAt: -1 })
 
     res.json({
-
       success: true,
       bookings
-
     })
 
   } catch (error) {
 
-    console.log(error.message)
+    console.log("User booking error:", error)
 
     res.status(500).json({
-
       success: false,
       message: error.message
-
     })
 
   }
