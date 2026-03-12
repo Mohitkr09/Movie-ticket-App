@@ -1,474 +1,494 @@
 import React, { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
-import { ArrowRightIcon, ClockIcon, PlayCircleIcon, Heart } from "lucide-react"
+import { ArrowRightIcon, ClockIcon } from "lucide-react"
+
 import BlurCircle from "../components/BlurCircle"
 import Loading from "../components/Loading"
+
 import toast from "react-hot-toast"
+
 import isoTimeFormat from "../lib/isoTimeFormat"
 import timeFormat from "../lib/timeFormat"
+
 import { useAppContext } from "../context/AppContext"
 import { assets } from "../assets/assets"
 
-const groupRows = [["A", "B"], ["C", "D"], ["E", "F"], ["G", "H"], ["I", "J"]]
+const groupRows = [["A","B"],["C","D"],["E","F"],["G","H"],["I","J"]]
 
-const premiumRows = ["A", "B"]   // premium seats
+const premiumRows = ["A","B"]
 
 const SeatLayout = () => {
 
-  const { id, date } = useParams()
-  const navigate = useNavigate()
+const { id, date } = useParams()
+const navigate = useNavigate()
 
-  const {
-    axios,
-    getToken,
-    user,
-    fetchFavoriteMovies,
-    favoriteMovies,
-    image_base_url
-  } = useAppContext()
+const {
+axios,
+getToken,
+user,
+fetchFavoriteMovies,
+favoriteMovies,
+image_base_url
+} = useAppContext()
 
-  const [show, setShow] = useState(null)
-  const [selectedSeats, setSelectedSeats] = useState([])
-  const [selectedTime, setSelectedTime] = useState(null)
-  const [occupiedSeats, setOccupiedSeats] = useState([])
-  const [lockedSeats, setLockedSeats] = useState([])
-  const [isFavorite, setIsFavorite] = useState(false)
+const [show,setShow] = useState(null)
 
-  const [timeLeft, setTimeLeft] = useState(300)
+const [selectedSeats,setSelectedSeats] = useState([])
+const [selectedTime,setSelectedTime] = useState(null)
 
-  /* =========================
-  FETCH SHOW
-  ========================= */
+const [occupiedSeats,setOccupiedSeats] = useState([])
+const [lockedSeats,setLockedSeats] = useState([])
 
-  const getShow = async () => {
-    try {
+const [timeLeft,setTimeLeft] = useState(300)
 
-      const { data } = await axios.get(`/api/show/${id}`)
+/* ================= FETCH SHOW ================= */
 
-      if (data.success) setShow(data)
+const getShow = async()=>{
 
-    } catch (error) {
+try{
 
-      toast.error("Failed to fetch show")
+const {data} = await axios.get(`/api/show/${id}`)
 
-    }
-  }
+if(data.success) setShow(data)
 
-  /* =========================
-  FETCH BOOKED SEATS
-  ========================= */
+}catch{
 
-  const getOccupiedSeats = async () => {
+toast.error("Failed to fetch show")
 
-    if (!selectedTime) return
+}
 
-    try {
+}
 
-      const { data } = await axios.get(`/api/booking/seats/${selectedTime.showId}`)
+/* ================= FETCH OCCUPIED SEATS ================= */
 
-      if (data.success) {
+const getOccupiedSeats = async()=>{
 
-        setOccupiedSeats(data.occupiedSeats)
-        setLockedSeats(data.lockedSeats || [])
+if(!selectedTime) return
 
-      }
+try{
 
-    } catch (error) {
+const {data} = await axios.get(`/api/booking/seats/${selectedTime.showId}`)
 
-      console.log(error)
+if(data.success){
 
-    }
+setOccupiedSeats(data.occupiedSeats)
+setLockedSeats(data.lockedSeats || [])
 
-  }
+}
 
+}catch(err){
 
-  const lockSeats = async (seats) => {
+console.log(err)
 
-    try {
+}
 
-      await axios.post(
-        "/api/booking/lock-seats",
-        {
-          showId: selectedTime.showId,
-          seats
-        },
-        {
-          headers: { Authorization: `Bearer ${await getToken()}` }
-        }
-      )
+}
 
-    } catch (error) {
+/* ================= LOCK SEATS ================= */
 
-      toast.error("Failed to lock seats")
+const lockSeats = async(seats)=>{
 
-    }
+try{
 
-  }
+await axios.post(
+"/api/booking/lock-seats",
+{
+showId:selectedTime.showId,
+seats
+},
+{
+headers:{Authorization:`Bearer ${await getToken()}`}
+}
+)
 
+}catch{
 
-  const handleSeatClick = async (seatId) => {
+toast.error("Seat lock failed")
 
-    if (!selectedTime) return toast("Select a time first")
+}
 
-    if (occupiedSeats.includes(seatId))
-      return toast("Seat already booked")
+}
 
-    if (lockedSeats.includes(seatId))
-      return toast("Seat temporarily locked")
+/* ================= HANDLE SEAT CLICK ================= */
 
-    if (!selectedSeats.includes(seatId) && selectedSeats.length >= 5)
-      return toast("Max 5 seats allowed")
+const handleSeatClick = async(seatId)=>{
 
-    let updatedSeats
+if(!selectedTime) return toast("Select showtime first")
 
-    if (selectedSeats.includes(seatId)) {
+if(occupiedSeats.includes(seatId))
+return toast("Seat already booked")
 
-      updatedSeats = selectedSeats.filter((s) => s !== seatId)
+if(lockedSeats.includes(seatId))
+return toast("Seat temporarily locked")
 
-    } else {
+if(!selectedSeats.includes(seatId) && selectedSeats.length >= 5)
+return toast("Max 5 seats allowed")
 
-      updatedSeats = [...selectedSeats, seatId]
+let updated
 
-      await lockSeats([seatId])   // lock seat
+if(selectedSeats.includes(seatId)){
 
-    }
+updated = selectedSeats.filter(s=>s!==seatId)
 
-    setSelectedSeats(updatedSeats)
+}else{
 
-  }
+updated = [...selectedSeats,seatId]
 
-  /* =========================
-  BOOK TICKETS
-  ========================= */
+await lockSeats([seatId])
 
-  const bookTickets = async () => {
+}
 
-    if (!user) return toast.error("Login required")
+setSelectedSeats(updated)
 
-    if (!selectedTime || !selectedSeats.length)
-      return toast.error("Select time & seats")
+}
 
-    try {
+/* ================= BOOK TICKETS ================= */
 
-      const { data } = await axios.post(
-        "/api/booking/create",
-        {
-          showId: selectedTime.showId,
-          selectedSeats
-        },
-        {
-          headers: { Authorization: `Bearer ${await getToken()}` }
-        }
-      )
+const bookTickets = async()=>{
 
-      if (data.success) {
+if(!user) return toast.error("Login required")
 
-        window.location.href = data.url
+if(!selectedTime || !selectedSeats.length)
+return toast.error("Select seats")
 
-      }
+try{
 
-    } catch (error) {
+const {data} = await axios.post(
+"/api/booking/create",
+{
+showId:selectedTime.showId,
+selectedSeats
+},
+{
+headers:{Authorization:`Bearer ${await getToken()}`}
+}
+)
 
-      toast.error("Booking failed")
+if(data.success){
 
-    }
+window.location.href = data.url
 
-  }
+}
 
-  /* =========================
-  FAVORITE
-  ========================= */
+}catch{
 
-  const handleFavorite = async () => {
+toast.error("Booking failed")
 
-    if (!user) return toast.error("Login required")
+}
 
-    try {
+}
 
-      setIsFavorite(!isFavorite)
+/* ================= TIMER ================= */
 
-      const { data } = await axios.post(
-        "/api/user/update-favorite",
-        { movieId: id },
-        {
-          headers: { Authorization: `Bearer ${await getToken()}` }
-        }
-      )
+useEffect(()=>{
 
-      if (data.success) fetchFavoriteMovies()
+if(!selectedSeats.length) return
 
-    } catch (error) {
+const timer = setInterval(()=>{
 
-      setIsFavorite(!isFavorite)
+setTimeLeft(prev=>{
 
-      toast.error("Failed to update favorite")
+if(prev<=1){
 
-    }
+setSelectedSeats([])
+toast("Seat reservation expired")
+return 300
 
-  }
+}
 
-  /* =========================
-  TIMER
-  ========================= */
+return prev-1
 
-  useEffect(() => {
+})
 
-    if (!selectedSeats.length) return
+},1000)
 
-    const timer = setInterval(() => {
+return ()=>clearInterval(timer)
 
-      setTimeLeft((prev) => {
+},[selectedSeats])
 
-        if (prev <= 1) {
+/* ================= EFFECTS ================= */
 
-          setSelectedSeats([])
+useEffect(()=>{
 
-          toast("Seat lock expired")
+getShow()
 
-          return 300
+},[id])
 
-        }
+useEffect(()=>{
 
-        return prev - 1
+getOccupiedSeats()
 
-      })
+},[selectedTime])
 
-    }, 1000)
+if(!show || !show.movie) return <Loading/>
 
-    return () => clearInterval(timer)
+const movie = show.movie
 
-  }, [selectedSeats])
+const showTimes = show.dateTime?.[date] || []
 
-  /* =========================
-  EFFECTS
-  ========================= */
+/* ================= SEAT RENDER ================= */
 
-  useEffect(() => {
+const renderSeats = (row,count=10)=>(
 
-    getShow()
+<div key={row} className="flex gap-2 justify-center flex-wrap">
 
-    setIsFavorite(favoriteMovies.some((fav) => fav._id === id))
+{Array.from({length:count},(_,i)=>{
 
-  }, [id, favoriteMovies])
+const seatId = `${row}${i+1}`
 
-  useEffect(() => {
+const isPremium = premiumRows.includes(row)
 
-    getOccupiedSeats()
+let color = "border border-primary/60"
 
-  }, [selectedTime])
+if(occupiedSeats.includes(seatId))
+color = "bg-red-500"
 
-  if (!show || !show.movie) return <Loading />
+else if(lockedSeats.includes(seatId))
+color = "bg-gray-400"
 
-  const movie = show.movie
-  const showTimes = show.dateTime?.[date] || []
+else if(selectedSeats.includes(seatId))
+color = "bg-blue-500"
 
-  /* =========================
-  SEAT RENDER
-  ========================= */
+else if(isPremium)
+color = "bg-yellow-400 text-black"
 
-  const renderSeats = (row, count = 10) => (
+return(
 
-    <div key={row} className="flex gap-2 justify-center flex-wrap">
+<button
+key={seatId}
+onClick={()=>handleSeatClick(seatId)}
+className={`h-10 w-10 rounded-md text-xs font-medium flex items-center justify-center transition hover:scale-110 ${color}`}
+>
 
-      {Array.from({ length: count }, (_, i) => {
+{seatId}
 
-        const seatId = `${row}${i + 1}`
+</button>
 
-        const isPremium = premiumRows.includes(row)
+)
 
-        let color = "border-primary/60"
+})}
 
-        if (occupiedSeats.includes(seatId))
-          color = "bg-red-500"
+</div>
 
-        else if (lockedSeats.includes(seatId))
-          color = "bg-gray-400"
+)
 
-        else if (selectedSeats.includes(seatId))
-          color = "bg-blue-500"
+/* ================= UI ================= */
 
-        else if (isPremium)
-          color = "bg-yellow-400 text-black"
+return(
 
-        return (
+<div className="px-6 md:px-16 lg:px-28 py-12 text-white relative">
 
-          <button
-            key={seatId}
-            onClick={() => handleSeatClick(seatId)}
-            className={`h-9 w-9 rounded text-[11px] flex items-center justify-center transition ${color}`}
-          >
+<BlurCircle top="-120px" left="-120px"/>
+<BlurCircle bottom="-40px" right="-40px"/>
 
-            {seatId}
+<div className="max-w-6xl mx-auto flex flex-col gap-14">
 
-          </button>
+{/* MOVIE INFO */}
 
-        )
+<div className="flex flex-col md:flex-row gap-10">
 
-      })}
+<img
+src={movie.poster_path
+? image_base_url+movie.poster_path
+: "/placeholder.jpg"}
+className="w-64 rounded-xl shadow-lg"
+/>
 
-    </div>
+<div className="flex flex-col gap-4">
 
-  )
+<h1 className="text-3xl font-semibold">
+{movie.title}
+</h1>
 
-  return (
+<p className="text-gray-400">
+{timeFormat(movie.runtime)} • {movie.release_date?.split("-")[0]}
+</p>
 
-    <div className="px-4 sm:px-6 md:px-12 lg:px-24 py-10 text-white relative">
+{/* SHOWTIMES */}
 
-      <BlurCircle top="-120px" left="-120px" />
-      <BlurCircle bottom="-40px" right="-40px" />
+<div className="bg-primary/10 border border-primary/20 rounded-xl p-4">
 
-      <div className="w-full max-w-6xl mx-auto flex flex-col gap-12">
+<h3 className="font-semibold mb-3">
 
-        {/* MOVIE SECTION */}
+Available Timings
 
-        <div className="flex flex-col md:flex-row gap-10">
+</h3>
 
-          <div className="md:w-1/3 flex flex-col gap-6">
+<div className="flex flex-wrap gap-2">
 
-            <img
-              src={
-                movie.poster_path
-                  ? image_base_url + movie.poster_path
-                  : "/placeholder.jpg"
-              }
-              className="rounded-xl shadow-lg w-full object-cover max-h-[420px]"
-            />
+{showTimes.map(t=>(
 
-            <h2 className="text-2xl sm:text-3xl font-semibold">
+<div
+key={t.time}
+onClick={()=>setSelectedTime(t)}
+className={`flex items-center gap-2 px-4 py-2 rounded-md cursor-pointer transition
+${selectedTime?.time===t.time
+? "bg-primary text-white"
+: "hover:bg-primary/20"
+}`}
+>
 
-              {movie.title}
+<ClockIcon className="w-4 h-4"/>
 
-            </h2>
+{isoTimeFormat(t.time)}
 
-            <p className="text-gray-300 text-sm sm:text-base">
+</div>
 
-              {movie.genres?.map((g) => g.name).join(", ")}
+))}
 
-            </p>
+</div>
 
-            <p className="text-gray-400 text-sm sm:text-base">
+</div>
 
-              {timeFormat(movie.runtime)} •{" "}
-              {movie.release_date?.split("-")[0]}
+</div>
 
-            </p>
+</div>
 
-            {/* TIMINGS */}
+{/* SEAT SECTION */}
 
-            <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 mt-4 w-full">
+{selectedTime ? (
 
-              <h3 className="font-semibold mb-3">
+<div className="flex flex-col items-center">
 
-                Available Timings
+{/* TIMER */}
 
-              </h3>
+<div className="mb-6 bg-gray-900 border border-gray-800 rounded-lg px-6 py-3 text-center">
 
-              <div className="flex flex-wrap gap-2">
+<p className="text-sm text-gray-400">
 
-                {showTimes.map((t) => (
+Seat reservation expires in
 
-                  <div
-                    key={t.time}
-                    onClick={() => setSelectedTime(t)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-md cursor-pointer transition
-                      ${
-                        selectedTime?.time === t.time
-                          ? "bg-primary text-white"
-                          : "hover:bg-primary/20"
-                      }`}
-                  >
+</p>
 
-                    <ClockIcon className="w-4 h-4" />
+<p className="text-lg font-semibold text-primary">
 
-                    {isoTimeFormat(t.time)}
+{Math.floor(timeLeft/60)}:
+{(timeLeft%60).toString().padStart(2,"0")}
 
-                  </div>
+</p>
 
-                ))}
+</div>
 
-              </div>
+{/* LEGEND */}
 
-            </div>
+<div className="flex flex-wrap justify-center gap-6 mb-6 text-sm text-gray-300">
 
-          </div>
+<div className="flex items-center gap-2">
+<div className="w-4 h-4 border border-primary rounded"></div>
+Available
+</div>
 
-        </div>
+<div className="flex items-center gap-2">
+<div className="w-4 h-4 bg-blue-500 rounded"></div>
+Selected
+</div>
 
-        {/* SEATS */}
+<div className="flex items-center gap-2">
+<div className="w-4 h-4 bg-red-500 rounded"></div>
+Booked
+</div>
 
-        {selectedTime ? (
+<div className="flex items-center gap-2">
+<div className="w-4 h-4 bg-gray-400 rounded"></div>
+Locked
+</div>
 
-          <div className="flex flex-col items-center">
+<div className="flex items-center gap-2">
+<div className="w-4 h-4 bg-yellow-400 rounded"></div>
+Premium
+</div>
 
-            <h2 className="text-xl sm:text-2xl font-semibold mb-2">
+</div>
 
-              Select your seats
+{/* SCREEN */}
 
-            </h2>
+<div className="relative mb-10">
 
-            <p className="text-sm text-gray-400 mb-6">
+<img
+src={assets.screenImage}
+className="mx-auto max-w-md"
+/>
 
-              Time remaining: {Math.floor(timeLeft / 60)}:
-              {(timeLeft % 60).toString().padStart(2, "0")}
+<p className="text-center text-gray-400 text-sm mt-2">
 
-            </p>
+All eyes this way please 👀
 
-            <img
-              src={assets.screenImage}
-              className="mx-auto mt-2 mb-2 max-w-[90%] sm:max-w-md"
-            />
+</p>
 
-            <p className="text-gray-400 text-sm mb-10">
+</div>
 
-              Screen Side
+{/* SEATS */}
 
-            </p>
+<div className="flex flex-col gap-6 items-center">
 
-            <div className="flex flex-col gap-6 items-center">
+{groupRows.map((group,idx)=>(
 
-              {groupRows.map((group, idx) => (
+<div key={idx} className="flex gap-6 flex-wrap justify-center">
 
-                <div
-                  key={idx}
-                  className="flex gap-6 justify-center flex-wrap"
-                >
+{group.map(row=>renderSeats(row))}
 
-                  {group.map((row) => renderSeats(row))}
+</div>
 
-                </div>
+))}
 
-              ))}
+</div>
 
-            </div>
+{/* SUMMARY */}
 
-            <button
-              onClick={bookTickets}
-              className="mt-10 px-10 py-3 bg-primary hover:bg-primary-dull rounded-full text-sm font-medium flex items-center gap-2"
-            >
+<div className="mt-8 bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
 
-              Proceed to Checkout
+<p className="text-gray-400 text-sm">
 
-              <ArrowRightIcon className="w-4 h-4" />
+Selected Seats
 
-            </button>
+</p>
 
-          </div>
+<p className="text-lg font-semibold mt-1">
 
-        ) : (
+{selectedSeats.length
+? selectedSeats.join(", ")
+: "None"}
 
-          <p className="text-gray-400 text-center text-lg">
+</p>
 
-            Select a showtime to view seats
+<p className="text-gray-400 text-sm mt-3">
 
-          </p>
+Total Seats: {selectedSeats.length}
 
-        )}
+</p>
 
-      </div>
+</div>
 
-    </div>
+{/* CHECKOUT */}
 
-  )
+<button
+onClick={bookTickets}
+className="mt-10 px-12 py-3 bg-primary hover:bg-primary-dull rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg hover:scale-105 transition-all"
+>
+
+Proceed to Checkout
+
+<ArrowRightIcon className="w-4 h-4"/>
+
+</button>
+
+</div>
+
+):(
+
+<p className="text-gray-400 text-center text-lg">
+
+Select a showtime to view seats
+
+</p>
+
+)}
+
+</div>
+
+</div>
+
+)
 
 }
 

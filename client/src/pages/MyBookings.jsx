@@ -1,135 +1,286 @@
-import React, { useState, useEffect } from 'react'
-import { Link, useNavigate, useLocation } from 'react-router-dom'
-import BlurCircle from '../components/BlurCircle'
-import Loading from '../components/Loading'
-import { useAppContext } from '../context/AppContext'
-import { dateFormat } from '../lib/dateFormat'
-import timeFormat from '../lib/timeFormat'
+import React, { useState, useEffect } from "react"
+import { Link, useNavigate, useLocation } from "react-router-dom"
+import { Ticket, Clock, Film, CheckCircle } from "lucide-react"
+
+import BlurCircle from "../components/BlurCircle"
+import Loading from "../components/Loading"
+
+import { useAppContext } from "../context/AppContext"
+import { dateFormat } from "../lib/dateFormat"
+import timeFormat from "../lib/timeFormat"
 
 const MyBookings = () => {
-  const currency = import.meta.env.VITE_CURRENCY
-  const { axios, getToken, user, image_base_url } = useAppContext()
-  const navigate = useNavigate()
-  const location = useLocation()
 
-  const [bookings, setBookings] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
+const currency = import.meta.env.VITE_CURRENCY
 
-  // -------------------------
-  // Fetch My Bookings
-  // -------------------------
-  const getMyBookings = async () => {
-    try {
-      const { data } = await axios.get('/api/user/bookings', {
-        headers: { Authorization: `Bearer ${await getToken()}` },
-      })
-      if (data.success) {
-        setBookings(data.bookings || [])
-      }
-    } catch (error) {
-      console.error('Error fetching bookings:', error)
-    }
-    setIsLoading(false)
-  }
+const { axios, getToken, user, image_base_url } = useAppContext()
 
-  // -------------------------
-  // Handle Stripe Redirect
-  // -------------------------
-  useEffect(() => {
-    const fromStripe = location.pathname.includes("/loading")
-    const loadBookings = async () => {
-      if (fromStripe) {
-        // optional: you can show a message or spinner
-        await new Promise(resolve => setTimeout(resolve, 1500))  
+const navigate = useNavigate()
+const location = useLocation()
 
-        try {
-          await axios.get('/api/payment/verify-latest', {
-            headers: { Authorization: `Bearer ${await getToken()}` },
-          })
-        } catch (err) {
-          console.log("Payment verify error:", err)
-        }
-      }
+const [bookings,setBookings] = useState([])
+const [isLoading,setIsLoading] = useState(true)
 
-      if (user) await getMyBookings()
-    }
+/* ================= FETCH BOOKINGS ================= */
 
-    loadBookings()
-  }, [user, location.pathname])
+const getMyBookings = async()=>{
 
-  if (isLoading) return <Loading />
+try{
 
-  return (
-    <div className="relative px-6 md:px-16 lg:px-40 pt-30 md:pt-40 min-h-[80vh]">
-      <BlurCircle top="100px" left="100px" />
-      <BlurCircle bottom="0px" left="600px" />
-      <h1 className="text-lg font-semibold mb-4">My Bookings</h1>
+const {data} = await axios.get("/api/user/bookings",{
+headers:{Authorization:`Bearer ${await getToken()}`}
+})
 
-      {bookings.length === 0 ? (
-        <p className="text-gray-400 mt-4">You have no bookings yet.</p>
-      ) : (
-        bookings.map((item, index) => {
-          const movie = item.show?.movie
-          const poster = movie?.poster_path
-            ? image_base_url + movie.poster_path
-            : '/placeholder.jpg'
+if(data.success){
 
-          const goToMovie = () => {
-            if (movie?._id) navigate(`/movies/${movie._id}`)
-          }
+setBookings(data.bookings || [])
 
-          return (
-            <div
-              key={index}
-              className="flex flex-col md:flex-row justify-between bg-primary/8 border-primary/20 rounded-lg mt-4 p-2 max-w-3xl"
-            >
-              <div className="flex flex-col md:flex-row cursor-pointer" onClick={goToMovie}>
-                <img
-                  src={poster}
-                  alt={movie?.title || 'Movie Poster'}
-                  className="md:max-w-45 aspect-video h-auto object-cover object-bottom rounded"
-                />
-                <div className="flex flex-col p-4">
-                  <p className="text-lg font-semibold">{movie?.title || 'Untitled'}</p>
-                  <p className="text-gray-400 text-sm">{timeFormat(movie?.runtime)}</p>
-                  <p className="text-gray-400 text-sm mt-auto">
-                    {dateFormat(item.show?.showDateTime)}
-                  </p>
-                </div>
-              </div>
+}
 
-              <div className="flex flex-col md:items-end md:text-right justify-between p-4">
-                <div className="flex items-center gap-4">
-                  <p className="text-2xl font-semibold mb-3">
-                    {currency}
-                    {item.amount}
-                  </p>
-                  {!item.isPaid && item.paymentLink && (
-                    <Link
-                      to={item.paymentLink}
-                      className="bg-primary px-4 py-1.5 mb-3 text-sm rounded-full font-medium cursor-pointer"
-                    >
-                      Pay Now
-                    </Link>
-                  )}
-                </div>
-                <div className="text-sm">
-                  <p>
-                    <span className="text-gray-400">Total Tickets:</span>
-                    {item.bookedSeats?.length || 0}
-                  </p>
-                  <p>
-                    <span className="text-gray-400">Seat Number:</span>
-                    {item.bookedSeats?.join('. ') || 'N/A'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )
-        })
-      )}
-    </div>
-  )
+}catch(error){
+
+console.error("Booking fetch error:",error)
+
+}
+
+setIsLoading(false)
+
+}
+
+/* ================= STRIPE REDIRECT ================= */
+
+useEffect(()=>{
+
+const fromStripe = location.pathname.includes("/loading")
+
+const loadBookings = async()=>{
+
+if(fromStripe){
+
+await new Promise(resolve=>setTimeout(resolve,1500))
+
+try{
+
+await axios.get("/api/payment/verify-latest",{
+headers:{Authorization:`Bearer ${await getToken()}`}
+})
+
+}catch(err){
+
+console.log("Payment verify error:",err)
+
+}
+
+}
+
+if(user) await getMyBookings()
+
+}
+
+loadBookings()
+
+},[user,location.pathname])
+
+if(isLoading) return <Loading/>
+
+return (
+
+<section className="relative px-6 md:px-16 lg:px-28 xl:px-40 pt-32 min-h-[80vh]">
+
+<BlurCircle top="100px" left="100px" size={260}/>
+<BlurCircle bottom="0px" right="200px" size={240}/>
+
+{/* HEADER */}
+
+<div className="flex items-center gap-3 mb-10">
+
+<Ticket className="text-primary w-6 h-6"/>
+
+<h1 className="text-3xl font-semibold text-white">
+
+My Bookings
+
+</h1>
+
+</div>
+
+{/* EMPTY STATE */}
+
+{bookings.length === 0 ? (
+
+<div className="flex flex-col items-center justify-center text-center mt-20">
+
+<Film className="w-16 h-16 text-gray-600 mb-4"/>
+
+<h2 className="text-xl text-white font-semibold">
+
+No Bookings Yet
+
+</h2>
+
+<p className="text-gray-400 mt-2 max-w-md">
+
+You haven't booked any tickets yet.
+Discover movies and reserve your seats.
+
+</p>
+
+<button
+onClick={()=>navigate("/movies")}
+className="mt-6 px-6 py-2 bg-primary rounded-full hover:bg-primary-dull transition"
+>
+
+Browse Movies
+
+</button>
+
+</div>
+
+):( 
+
+<div className="grid gap-8 max-w-5xl">
+
+{bookings.map((item,index)=>{
+
+const movie = item.show?.movie
+
+const poster = movie?.poster_path
+? image_base_url + movie.poster_path
+: "/placeholder.jpg"
+
+const goToMovie = ()=>{
+
+if(movie?._id) navigate(`/movies/${movie._id}`)
+
+}
+
+return(
+
+<div
+key={index}
+className="bg-gray-900/70 backdrop-blur-lg border border-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition"
+>
+
+<div className="flex flex-col md:flex-row">
+
+{/* POSTER */}
+
+<div
+className="relative md:w-48 cursor-pointer"
+onClick={goToMovie}
+>
+
+<img
+src={poster}
+alt={movie?.title}
+className="w-full h-full object-cover"
+/>
+
+<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"/>
+
+</div>
+
+{/* CONTENT */}
+
+<div className="flex flex-col flex-1 p-6 justify-between">
+
+<div>
+
+<h3 className="text-xl font-semibold text-white">
+
+{movie?.title || "Untitled"}
+
+</h3>
+
+<p className="text-gray-400 text-sm mt-1">
+
+{timeFormat(movie?.runtime)}
+
+</p>
+
+{/* BOOKING INFO */}
+
+<div className="flex flex-wrap gap-4 mt-4 text-sm">
+
+<span className="flex items-center gap-1 bg-gray-800 px-3 py-1 rounded-full">
+
+<Clock className="w-4 h-4"/>
+
+{dateFormat(item.show?.showDateTime)}
+
+</span>
+
+<span className="bg-gray-800 px-3 py-1 rounded-full">
+
+Seats: {item.bookedSeats?.join(", ")}
+
+</span>
+
+<span className="bg-gray-800 px-3 py-1 rounded-full">
+
+Tickets: {item.bookedSeats?.length}
+
+</span>
+
+</div>
+
+</div>
+
+{/* PAYMENT SECTION */}
+
+<div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-6">
+
+<p className="text-2xl font-semibold text-primary">
+
+{currency}{item.amount}
+
+</p>
+
+{!item.isPaid && item.paymentLink &&(
+
+<Link
+to={item.paymentLink}
+className="bg-primary hover:bg-primary-dull text-white px-6 py-2 rounded-full text-sm font-medium"
+>
+
+Complete Payment
+
+</Link>
+
+)}
+
+{item.isPaid &&(
+
+<span className="flex items-center gap-1 text-green-400 text-sm font-medium">
+
+<CheckCircle className="w-4 h-4"/>
+
+Payment Confirmed
+
+</span>
+
+)}
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+)
+
+})}
+
+</div>
+
+)}
+
+</section>
+
+)
+
 }
 
 export default MyBookings

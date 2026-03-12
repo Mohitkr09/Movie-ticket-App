@@ -22,7 +22,6 @@ import { stripeWebhooks } from "./controllers/stripeWebhooks.js"
 /* SERVICES */
 import sendEmail from "./configs/nodeMailer.js"
 
-
 /* ======================================================
 APP INITIALIZATION
 ====================================================== */
@@ -30,13 +29,11 @@ APP INITIALIZATION
 const app = express()
 const port = process.env.PORT || 3000
 
-
 /* ======================================================
 CREATE HTTP SERVER (Required for Socket.IO)
 ====================================================== */
 
 const server = http.createServer(app)
-
 
 /* ======================================================
 SOCKET.IO SETUP
@@ -49,7 +46,6 @@ export const io = new Server(server, {
   }
 })
 
-
 /* ======================================================
 SOCKET CONNECTION HANDLER
 ====================================================== */
@@ -58,47 +54,30 @@ io.on("connection", (socket) => {
 
   console.log("🟢 User connected:", socket.id)
 
-  /* Join specific show room */
   socket.on("join-show", (showId) => {
-
     socket.join(showId)
-
     console.log(`User joined show room: ${showId}`)
-
   })
 
-
-  /* Seat lock broadcast */
   socket.on("lock-seat", ({ showId, seat }) => {
-
     socket.to(showId).emit("seat-locked", seat)
-
   })
 
-
-  /* Seat booking broadcast */
   socket.on("seat-booked", ({ showId, seat }) => {
-
     socket.to(showId).emit("seat-booked-update", seat)
-
   })
-
 
   socket.on("disconnect", () => {
-
     console.log("🔴 User disconnected:", socket.id)
-
   })
 
 })
-
 
 /* ======================================================
 CONNECT DATABASE
 ====================================================== */
 
 await connectDB()
-
 
 /* ======================================================
 STRIPE WEBHOOK (RAW BODY REQUIRED)
@@ -110,23 +89,8 @@ app.post(
   stripeWebhooks
 )
 
-
 /* ======================================================
-ALLOWED CORS ORIGINS
-====================================================== */
-
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://movie-ticket-app-radp.vercel.app",
-  "https://movie-ticket-app-radp-ivdlfj2w8-mohits-projects-92e7fc3c.vercel.app",
-  "https://movie-ticket-app-jz7m.vercel.app",
-  "https://movie-ticket-app-zi7g.vercel.app",
-  "https://movie-ticket-app-14.onrender.com"
-]
-
-
-/* ======================================================
-CORS MIDDLEWARE
+CORS CONFIGURATION (UPDATED)
 ====================================================== */
 
 app.use(
@@ -135,17 +99,29 @@ app.use(
 
       if (!origin) return callback(null, true)
 
-      if (allowedOrigins.includes(origin)) {
+      /* allow localhost */
+      if (origin.includes("localhost")) {
         return callback(null, true)
       }
 
-      return callback(new Error("❌ Not allowed by CORS"))
+      /* allow vercel deployments */
+      if (origin.includes("vercel.app")) {
+        return callback(null, true)
+      }
+
+      /* allow render deployments */
+      if (origin.includes("onrender.com")) {
+        return callback(null, true)
+      }
+
+      console.log("⚠️ Blocked by CORS:", origin)
+
+      return callback(null, true) // allow but log
 
     },
     credentials: true
   })
 )
-
 
 /* ======================================================
 BODY PARSER
@@ -153,24 +129,19 @@ BODY PARSER
 
 app.use(express.json())
 
-
 /* ======================================================
 CLERK AUTHENTICATION
 ====================================================== */
 
 app.use(clerkMiddleware())
 
-
 /* ======================================================
 HEALTH CHECK
 ====================================================== */
 
 app.get("/", (req, res) => {
-
   res.send("🚀 Movie Ticket API Running")
-
 })
-
 
 /* ======================================================
 EMAIL TEST ROUTE
@@ -198,7 +169,6 @@ app.get("/test-email", async (req, res) => {
 
 })
 
-
 /* ======================================================
 API ROUTES
 ====================================================== */
@@ -217,20 +187,16 @@ app.use("/api/ai", aiRouter)
 
 app.use("/api/reviews", reviewRoutes)
 
-
 /* ======================================================
 404 ROUTE HANDLER
 ====================================================== */
 
 app.use((req, res) => {
-
   res.status(404).json({
     success: false,
     message: "API route not found"
   })
-
 })
-
 
 /* ======================================================
 GLOBAL ERROR HANDLER
@@ -242,18 +208,15 @@ app.use((err, req, res, next) => {
 
   res.status(500).json({
     success: false,
-    message: "Internal Server Error"
+    message: err.message || "Internal Server Error"
   })
 
 })
-
 
 /* ======================================================
 START SERVER
 ====================================================== */
 
 server.listen(port, () => {
-
   console.log(`✅ Server running on http://localhost:${port}`)
-
 })

@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { Heart, PlayCircleIcon, StarIcon, X, Share2, Bell } from "lucide-react"
+import {
+Heart,
+PlayCircleIcon,
+StarIcon,
+X,
+Share2,
+Bell
+} from "lucide-react"
+
 import MovieCard from "../components/MovieCard"
 import DateSelect from "../components/DateSelect"
 import Loading from "../components/Loading"
+
 import timeFormat from "../lib/timeFormat"
 import { useAppContext } from "../context/AppContext"
+
 import toast from "react-hot-toast"
 import { fetchRecommendations } from "../services/aiApis.js"
 
@@ -36,7 +46,6 @@ favoriteMovies,
 image_base_url
 } = useAppContext()
 
-
 /* ================= MOVIE ================= */
 
 const getShow = async(movieId)=>{
@@ -49,14 +58,13 @@ if(data.success){
 setShow(data)
 }
 
-}catch(err){
+}catch{
 
 toast.error("Failed to load movie")
 
 }
 
 }
-
 
 /* ================= FAVORITE ================= */
 
@@ -75,6 +83,7 @@ const {data} = await axios.post(
 if(data.success){
 
 setIsFavorite(prev=>!prev)
+
 fetchFavoriteMovies()
 
 toast.success("Favorite updated")
@@ -88,7 +97,6 @@ toast.error("Favorite update failed")
 }
 
 }
-
 
 /* ================= NOTIFICATION ================= */
 
@@ -118,7 +126,6 @@ toast.error("Notification failed")
 
 }
 
-
 /* ================= REVIEWS ================= */
 
 const fetchReviews = async()=>{
@@ -141,7 +148,6 @@ console.log("Review API error")
 }
 
 }
-
 
 const submitReview = async()=>{
 
@@ -187,7 +193,6 @@ toast.error("Review failed")
 
 }
 
-
 /* ================= SHARE ================= */
 
 const shareMovie = async()=>{
@@ -211,7 +216,6 @@ toast.success("Link copied")
 }catch{}
 
 }
-
 
 /* ================= AI RECOMMENDATIONS ================= */
 
@@ -244,6 +248,22 @@ setLoadingRecs(false)
 
 }
 
+/* ================= SAVE RECENTLY VIEWED ================= */
+
+useEffect(()=>{
+
+if(!show?.movie) return
+
+const stored = JSON.parse(localStorage.getItem("recentMovies")) || []
+
+const updated = [
+show.movie,
+...stored.filter(m=>m._id !== show.movie._id)
+].slice(0,8)
+
+localStorage.setItem("recentMovies",JSON.stringify(updated))
+
+},[show])
 
 /* ================= EFFECT ================= */
 
@@ -257,7 +277,6 @@ loadAIRecommendations()
 
 },[id])
 
-
 useEffect(()=>{
 
 setIsFavorite(
@@ -266,33 +285,35 @@ favoriteMovies.some(fav=>fav._id===id)
 
 },[favoriteMovies,id])
 
-
 if(!show || !show.movie) return <Loading/>
 
 const movie = show.movie
-
 
 /* ================= UI ================= */
 
 return(
 
-<div className="px-6 md:px-16 lg:px-40 pt-32 text-white">
+<div className="px-6 md:px-16 lg:px-32 pt-32 text-white">
 
-{/* Movie Section */}
+{/* MOVIE SECTION */}
 
-<div className="flex flex-col md:flex-row gap-10 max-w-6xl mx-auto">
+<div className="flex flex-col lg:flex-row gap-12 max-w-6xl mx-auto">
 
 <img
 src={movie.poster_path ? image_base_url+movie.poster_path : "/placeholder.jpg"}
 alt={movie.title}
-className="w-64 rounded-xl shadow-lg"
+className="w-64 rounded-xl shadow-xl"
 />
 
 <div className="flex flex-col gap-4">
 
-<p className="text-primary">{movie.original_language?.toUpperCase()}</p>
+<p className="text-primary">
+{movie.original_language?.toUpperCase()}
+</p>
 
-<h1 className="text-4xl font-semibold">{movie.title}</h1>
+<h1 className="text-4xl font-semibold">
+{movie.title}
+</h1>
 
 <div className="flex items-center gap-2">
 
@@ -302,7 +323,9 @@ className="w-64 rounded-xl shadow-lg"
 
 </div>
 
-<p className="text-gray-400">{movie.overview}</p>
+<p className="text-gray-400">
+{movie.overview}
+</p>
 
 <p className="text-gray-300">
 
@@ -312,35 +335,47 @@ className="w-64 rounded-xl shadow-lg"
 
 </p>
 
-
 {/* ACTION BUTTONS */}
 
-<div className="flex gap-4 mt-4">
+<div className="flex gap-3 mt-5">
 
 <button
 onClick={()=> movie.trailerKey
 ? setIsTrailerOpen(true)
 : toast.error("Trailer not available")}
-className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded"
+className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 rounded-lg"
 >
 
 <PlayCircleIcon className="w-5 h-5"/> Trailer
 
 </button>
 
-<button onClick={handleFavorite} className="bg-gray-700 p-2 rounded-full">
+<button
+onClick={handleFavorite}
+className="bg-gray-800 hover:bg-gray-700 p-2 rounded-full"
+>
 
-<Heart className={`w-5 h-5 ${isFavorite ? "fill-primary text-primary":""}`}/>
+<Heart className={`w-5 h-5 ${
+isFavorite
+? "fill-primary text-primary"
+: ""
+}`}/>
 
 </button>
 
-<button onClick={shareMovie} className="bg-gray-700 p-2 rounded-full">
+<button
+onClick={shareMovie}
+className="bg-gray-800 hover:bg-gray-700 p-2 rounded-full"
+>
 
 <Share2 className="w-5 h-5"/>
 
 </button>
 
-<button onClick={handleNotification} className="bg-gray-700 p-2 rounded-full">
+<button
+onClick={handleNotification}
+className="bg-gray-800 hover:bg-gray-700 p-2 rounded-full"
+>
 
 <Bell className="w-5 h-5"/>
 
@@ -352,7 +387,6 @@ className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 round
 
 </div>
 
-
 {/* TRAILER MODAL */}
 
 {isTrailerOpen &&(
@@ -363,7 +397,7 @@ className="flex items-center gap-2 px-6 py-3 bg-gray-800 hover:bg-gray-700 round
 
 <iframe
 src={`https://www.youtube.com/embed/${movie.trailerKey}?autoplay=1`}
-className="w-full h-full"
+className="w-full h-full rounded-xl"
 allowFullScreen
 />
 
@@ -382,35 +416,31 @@ className="absolute top-4 right-4 bg-gray-800 p-2 rounded-full"
 
 )}
 
-
 <DateSelect dateTime={show.dateTime} id={id}/>
 
+{/* REVIEWS */}
 
-{/* ================= REVIEWS ================= */}
+<div className="mt-24 max-w-4xl mx-auto">
 
-<div className="mt-20 max-w-4xl mx-auto">
-
-<h2 className="text-xl font-semibold mb-4">User Reviews</h2>
-
+<h2 className="text-2xl font-semibold mb-6">
+User Reviews
+</h2>
 
 {stats &&(
 
 <div className="mb-6 text-gray-300">
 
-⭐ <span className="text-xl font-bold">{stats.averageRating}</span> / 5
+⭐ <span className="text-xl font-bold">
+{stats.averageRating}
+</span> / 5
 
 <span className="ml-2 text-gray-400">
-
 ({stats.totalReviews} reviews)
-
 </span>
 
 </div>
 
 )}
-
-
-{/* STAR SELECTOR */}
 
 <div className="flex gap-2 mb-3">
 
@@ -430,14 +460,12 @@ rating>=star
 
 </div>
 
-
 <textarea
 value={reviewText}
 onChange={(e)=>setReviewText(e.target.value)}
 placeholder="Write your review..."
 className="w-full p-4 bg-gray-800 rounded-lg"
 />
-
 
 <button
 onClick={submitReview}
@@ -448,10 +476,9 @@ Submit Review
 
 </button>
 
-
 {/* REVIEWS LIST */}
 
-<div className="mt-8 space-y-6">
+<div className="mt-10 space-y-6">
 
 {reviews.map(r=>(
 
@@ -459,7 +486,6 @@ Submit Review
 
 <img
 src={r.userImage || `https://ui-avatars.com/api/?name=${r.userName}`}
-alt="user"
 className="w-11 h-11 rounded-full"
 />
 
@@ -482,13 +508,17 @@ star<=r.rating
 
 </div>
 
-<p className="text-gray-200">{r.comment}</p>
+<p className="text-gray-200">
+{r.comment}
+</p>
 
 <div className="flex justify-between text-xs text-gray-400 mt-2">
 
 <span>{r.userName}</span>
 
-<span>{new Date(r.createdAt).toLocaleDateString()}</span>
+<span>
+{new Date(r.createdAt).toLocaleDateString()}
+</span>
 
 </div>
 
@@ -502,15 +532,11 @@ star<=r.rating
 
 </div>
 
-
 {/* AI RECOMMENDATIONS */}
 
-<p className="text-lg font-medium mt-20 mb-8">
-
+<p className="text-xl font-semibold mt-24 mb-8">
 Recommended For You
-
 </p>
-
 
 <div className="flex flex-wrap gap-8">
 

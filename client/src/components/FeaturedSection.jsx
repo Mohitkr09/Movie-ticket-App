@@ -1,56 +1,97 @@
-import { ArrowRight } from 'lucide-react';
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import BlurCircle from './BlurCircle';
-import MovieCard from './MovieCard';
-import { useAppContext } from '../context/AppContext';
+import { ArrowRight } from "lucide-react";
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import BlurCircle from "./BlurCircle";
+import MovieCard from "./MovieCard";
+import { useAppContext } from "../context/AppContext";
 
 const FeaturedSection = () => {
+
   const navigate = useNavigate();
   const { shows } = useAppContext();
 
   return (
-    <div className="px-6 md:px-16 lg:px-24 xl:px-44 overflow-hidden">
-      <div className="relative flex items-center justify-between pt-20 pb-10">
-        <BlurCircle top="0" right="-80px" />
-        <p className="text-gray-300 font-medium text-lg">Now Showing</p>
 
-        {/* View All button */}
+    <section className="relative px-4 sm:px-8 md:px-16 lg:px-24 xl:px-40 py-20">
+
+      <BlurCircle top="0" right="-80px" />
+
+      {/* ================= HEADER ================= */}
+
+      <div className="flex items-center justify-between mb-12">
+
+        <div>
+
+          <h2 className="text-2xl sm:text-3xl font-semibold text-white">
+            Now Showing
+          </h2>
+
+          <p className="text-gray-400 text-sm mt-1">
+            Book tickets for the latest movies in theaters
+          </p>
+
+        </div>
+
+        {/* View All */}
+
         <button
           onClick={() => {
-            navigate('/movies'); 
+            navigate("/movies");
             window.scrollTo(0, 0);
           }}
-          className="group flex items-center gap-2 text-sm text-gray-300 cursor-pointer"
+          className="group flex items-center gap-2 text-sm text-gray-300 hover:text-white transition"
         >
+
           View All
-          <ArrowRight className="group-hover:translate-x-0.5 transition w-4.5 h-4.5" />
+
+          <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+
         </button>
+
       </div>
 
-      {/* Show only first 4 movies */}
-      <div className="flex flex-wrap max-sm:justify-center gap-8 mt-8">
+      {/* ================= MOVIE GRID ================= */}
+
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+
         {shows
           ?.filter((show) => show)
-          .slice(0, 4)
+          .slice(0, 8)
           .map((show) => (
-            <MovieCard key={show._id} movie={show} />
+
+            <div
+              key={show._id}
+              className="group transform transition duration-300 hover:-translate-y-2"
+            >
+
+              <MovieCard movie={show} />
+
+            </div>
+
           ))}
+
       </div>
 
-      {/* Show More button section */}
-      <div className="flex justify-center mt-20">
+      {/* ================= SHOW MORE BUTTON ================= */}
+
+      <div className="flex justify-center mt-16">
+
         <button
           onClick={() => {
-            navigate('/movies');
+            navigate("/movies");
             window.scrollTo(0, 0);
           }}
-          className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-md font-medium cursor-pointer"
+          className="px-10 py-3 text-sm bg-primary hover:bg-primary-dull transition rounded-full font-medium"
         >
-          Show More
+
+          Explore All Movies
+
         </button>
+
       </div>
-    </div>
+
+    </section>
+
   );
 };
 
