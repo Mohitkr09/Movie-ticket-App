@@ -258,8 +258,10 @@ const showTimes = show.dateTime?.[date] || []
 
 console.log("Show Object:", show);
 console.log("Show Price:", show.showPrice);
-const basePrice = show.showPrice || 0
-
+const basePrice =
+    selectedTime?.showPrice ||
+    show.showPrice ||
+    0;
 const calculateSeatPrice = (seat)=>{
 
 if(premiumRows.includes(seat[0]))
