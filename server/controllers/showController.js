@@ -165,23 +165,33 @@ export const getShows = async (req, res) => {
  */
 export const getShow = async (req, res) => {
   try {
-    const { movieId } = req.params
+    const { movieId } = req.params;
 
-    let movie = await Movie.findById(movieId)
+    let movie = await Movie.findById(movieId);
 
     if (!movie) {
       try {
         const [movieRes, creditsRes] = await Promise.all([
-          axios.get(`https://api.themoviedb.org/3/movie/${movieId}`, {
-            headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
-          }),
-          axios.get(`https://api.themoviedb.org/3/movie/${movieId}/credits`, {
-            headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
-          }),
-        ])
+          axios.get(
+            `https://api.themoviedb.org/3/movie/${movieId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
+              },
+            }
+          ),
+          axios.get(
+            `https://api.themoviedb.org/3/movie/${movieId}/credits`,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
+              },
+            }
+          ),
+        ]);
 
-        const movieData = movieRes.data
-        const creditsData = creditsRes.data
+        const movieData = movieRes.data;
+        const creditsData = creditsRes.data;
 
         const casts = (creditsData.cast || [])
           .slice(0, 10)
@@ -190,65 +200,96 @@ export const getShow = async (req, res) => {
             name: c.name,
             character: c.character,
             profile_path: c.profile_path,
-          }))
+          }));
 
         movie = await Movie.create({
           _id: movieData.id,
-          title: movieData.title || 'Untitled',
-          overview: movieData.overview || '',
-          poster_path: movieData.poster_path || '',
-          backdrop_path: movieData.backdrop_path || '',
+          title: movieData.title || "Untitled",
+          overview: movieData.overview || "",
+          poster_path: movieData.poster_path || "",
+          backdrop_path: movieData.backdrop_path || "",
           genres: movieData.genres || [],
           casts,
           release_date: movieData.release_date || null,
-          original_language: movieData.original_language || 'N/A',
-          tagline: movieData.tagline || '',
+          original_language: movieData.original_language || "N/A",
+          tagline: movieData.tagline || "",
           vote_average: movieData.vote_average || 0,
           runtime: movieData.runtime || null,
-        })
+        });
       } catch (err) {
-        console.error(`Failed to fetch movie ${movieId} from TMDB:`, err.message)
-        return res.status(404).json({ success: false, message: 'Movie not found' })
+        console.error(err);
+
+        return res.status(404).json({
+          success: false,
+          message: "Movie not found",
+        });
       }
     }
 
     const shows = await Show.find({
       movie: movieId,
       showDateTime: { $gte: new Date() },
-    })
+    }).sort({ showDateTime: 1 });
 
-    let trailerKey = null
+    let trailerKey = null;
+
     try {
       const { data: videos } = await axios.get(
         `https://api.themoviedb.org/3/movie/${movieId}/videos`,
-        { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
-      )
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
+          },
+        }
+      );
+
       const trailer = (videos.results || []).find(
-        (vid) => vid.site === 'YouTube' && vid.type === 'Trailer'
-      )
-      trailerKey = trailer ? trailer.key : null
+        (v) => v.site === "YouTube" && v.type === "Trailer"
+      );
+
+      trailerKey = trailer?.key || null;
     } catch (err) {
-      console.error(`Trailer fetch failed for movie ${movieId}:`, err.message)
+      console.log(err.message);
     }
 
-    const dateTime = {}
+    const dateTime = {};
+
     shows.forEach((show) => {
-      const date = show.showDateTime.toISOString().split('T')[0]
-      if (!dateTime[date]) dateTime[date] = []
-      dateTime[date].push({ time: show.showDateTime, showId: show._id })
-    })
+      const date = show.showDateTime.toISOString().split("T")[0];
+
+      if (!dateTime[date]) dateTime[date] = [];
+
+      dateTime[date].push({
+        time: show.showDateTime,
+        showId: show._id,
+        showPrice: show.showPrice, // <-- Added
+      });
+    });
+
+    const showPrice =
+      shows.length > 0 ? shows[0].showPrice : 0;
+
+    console.log("Returning Show Price:", showPrice);
 
     res.json({
       success: true,
-      movie: { ...movie.toObject(), trailerKey },
+      movie: {
+        ...movie.toObject(),
+        trailerKey,
+      },
       dateTime,
-    })
-  } catch (error) {
-    console.error(error.message)
-    res.status(500).json({ success: false, message: error.message })
-  }
-}
+      showPrice, // <-- Added
+    });
 
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
 /**
  * Fetch trailers (YouTube) for a given movie
  */

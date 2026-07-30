@@ -40,21 +40,26 @@ const [timeLeft,setTimeLeft] = useState(300)
 
 /* ================= FETCH SHOW ================= */
 
-const getShow = async()=>{
+const getShow = async () => {
+  try {
 
-try{
+    const { data } = await axios.get(`/api/show/${id}`);
 
-const {data} = await axios.get(`/api/show/${id}`)
+    console.log("SHOW API RESPONSE:", data);
 
-if(data.success) setShow(data)
+    if (data.success) {
+      setShow(data);
+    } else {
+      toast.error(data.message);
+    }
 
-}catch{
+  } catch (err) {
 
-toast.error("Failed to fetch show")
+    console.log(err);
+    toast.error("Failed to fetch show");
 
-}
-
-}
+  }
+};
 
 /* ================= FETCH OCCUPIED SEATS ================= */
 
@@ -141,43 +146,64 @@ setSelectedSeats(updated)
 
 /* ================= BOOK TICKETS ================= */
 
-const bookTickets = async()=>{
+const bookTickets = async () => {
 
-if(!user) return toast.error("Login required")
+  if (!user) {
+    return toast.error("Login required");
+  }
 
-if(!selectedTime || !selectedSeats.length)
-return toast.error("Select seats")
+  if (!selectedTime) {
+    return toast.error("Select show time");
+  }
 
-try{
+  if (selectedSeats.length === 0) {
+    return toast.error("Select seats");
+  }
 
-const {data} = await axios.post(
-"/api/booking/create",
-{
-showId:selectedTime.showId,
-selectedSeats
-},
-{
-headers:{Authorization:`Bearer ${await getToken()}`}
-}
-)
+  try {
 
-if(data.success){
+    console.log("Booking Request:", {
+      showId: selectedTime.showId,
+      selectedSeats
+    });
 
-window.location.href = data.url
+    const { data } = await axios.post(
+      "/api/booking/create",
+      {
+        showId: selectedTime.showId,
+        selectedSeats
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${await getToken()}`
+        }
+      }
+    );
 
-}else{
+    console.log("Booking Response:", data);
 
-toast.error(data.message)
+    if (data.success) {
 
-}
+      window.location.href = data.url;
 
-}catch{
+    } else {
 
-toast.error("Booking failed")
+      toast.error(data.message);
 
-}
+    }
 
-}
+  } catch (err) {
+
+    console.log(err.response?.data);
+    console.log(err);
+
+    toast.error(
+      err.response?.data?.message || "Booking failed"
+    );
+
+  }
+
+};
 
 /* ================= TIMER ================= */
 
@@ -230,6 +256,8 @@ const showTimes = show.dateTime?.[date] || []
 
 /* ================= PRICE CALCULATION ================= */
 
+console.log("Show Object:", show);
+console.log("Show Price:", show.showPrice);
 const basePrice = show.showPrice || 0
 
 const calculateSeatPrice = (seat)=>{
