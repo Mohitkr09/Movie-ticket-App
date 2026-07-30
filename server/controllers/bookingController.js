@@ -39,67 +39,11 @@ const checkSeatsAvailability = async (showId, selectedSeats) => {
 /* =====================================================
 LOCK SEATS (TEMPORARY HOLD)
 ===================================================== */
-
 export const lockSeats = async (req, res) => {
-
-  try {
-
-    const { showId, seats } = req.body;
-    const userId = req.auth?.userId;
-
-    if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized"
-      });
-    }
-
-    const showData = await Show.findById(showId);
-
-    if (!showData) {
-      return res.json({
-        success: false,
-        message: "Show not found"
-      });
-    }
-
-    if (!showData.occupiedSeats) {
-      showData.occupiedSeats = new Map();
-    }
-
-    const isTaken = seats.some(seat =>
-      showData.occupiedSeats.get(seat)
-    );
-
-    if (isTaken) {
-      return res.json({
-        success: false,
-        message: "Seat already locked"
-      });
-    }
-
-    seats.forEach(seat => {
-      showData.occupiedSeats.set(seat, true);
-    });
-
-    await showData.save();
-
-    res.json({
-      success: true,
-      message: "Seats locked successfully"
-    });
-
-  } catch (error) {
-
-    console.log("Lock seat error:", error);
-
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
-
-  }
-
+  return res.json({
+    success: true,
+    message: "Seat locking disabled"
+  });
 };
 
 /* =====================================================
