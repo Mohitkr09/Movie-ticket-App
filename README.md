@@ -10,7 +10,9 @@ payments.</strong>{=html}
 <img src="https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb&logoColor=white" alt="MongoDB" />{=html}
 <img src="https://img.shields.io/badge/Stripe-Payments-635BFF?style=for-the-badge&logo=stripe&logoColor=white" alt="Stripe" />{=html}
 </p>
+
 📌 Overview
+
 The Movie Ticket Booking Web Application is a full-stack platform
 that streamlines the process of discovering movies, choosing showtimes,
 selecting seats, and purchasing tickets online. It combines a React.js
@@ -20,7 +22,9 @@ processing.
 The application also includes a Python-based movie recommendation engine
 and automated booking confirmations to deliver a more personalized and
 convenient booking experience.
+
 ✨ Features
+
 👤 User Experience
 - Secure sign-up and sign-in powered by Clerk.
 - Browse available movies and show schedules.
@@ -29,33 +33,39 @@ convenient booking experience.
 - Receive booking confirmation emails and e-ticket details after
   successful booking.
 - Discover movies through an AI-driven recommendation engine.
+- 
 🎟️ Seat Booking
 - Interactive seat selection for showtime-based bookings.
 - Booking workflow connected to backend APIs and MongoDB.
 - Seat allocation and booking status management.
 - Seat availability should be revalidated on the server during booking
   to help prevent duplicate reservations.
+  
 🤖 AI Movie Recommendations
 - Python-based recommendation service.
 - Data processing and recommendation logic using Pandas, NumPy, and
   Scikit-learn.
 - Helps users discover movies based on the recommendation model
   implemented in the project.
+  
 💳 Online Payments
 - Stripe integration for movie-ticket transactions.
 - Backend support for payment-related operations.
 - Keep Stripe secret keys on the server and verify payment status
   before confirming a booking.
+  
 📧 Booking Notifications
 - Nodemailer-based email confirmation workflow.
 - Booking details and e-ticket information sent to users after
   successful booking, according to the configured email workflow.
+  
 🛠️ Admin Dashboard
 - Manage movie listings.
 - Manage show schedules.
 - Manage seat allocations and booking information.
 - Admin functionality protected by authentication and role-based
   authorization.
+  
 🧰 Tech Stack
   Technology                          Purpose
   React.js                            Frontend user interface
@@ -74,6 +84,7 @@ convenient booking experience.
                                       machine-learning utilities
   Nodemailer                          Email confirmations
   Git & GitHub                        Version control and collaboration
+  
 🏗️ Architecture
 ```mermaid
 flowchart TD
@@ -87,6 +98,7 @@ flowchart TD
     API --> REC[Python Recommendation Service]
     REC --> ML[Pandas, NumPy, Scikit-learn]
 ```
+
 🔄 Booking Workflow
 ```mermaid
 flowchart TD
@@ -101,6 +113,7 @@ flowchart TD
     I --> J[Send Confirmation Email]
     G -- No --> K[Show Payment Failure]
 ```
+
 📁 Project Structure
 The exact structure depends on your repository. A typical layout for
 this stack may look like:
@@ -112,6 +125,7 @@ movie-ticket-booking/
 └── .gitignore
 Update this section to match your actual folders and filenames before
 publishing.
+
 🚀 Getting Started
 Prerequisites
 - Node.js and npm
@@ -120,10 +134,12 @@ Prerequisites
 - Stripe account and test API keys
 - Python 3 and pip for the recommendation service
 - SMTP credentials for Nodemailer email delivery
+- 
 1. Clone the repository
 Replace the placeholder URL with your actual GitHub repository URL.
 git clone https://github.com/<your-username>/<your-repository>.git
 cd <your-repository>
+
 2. Configure the backend
 Navigate to the backend directory and install dependencies:
 cd server
@@ -141,7 +157,8 @@ Never commit real secrets to GitHub.
 Start the backend using the script defined in server/package.json. If
 a dev script exists:
 npm run dev
-3. Configure the frontend
+
+4. Configure the frontend
 Open a second terminal:
 cd client
 npm install
@@ -154,7 +171,8 @@ build tool and the variable names referenced in your source code. Only
 public keys belong in frontend configuration; never expose secret keys.
 Run the frontend using the script in client/package.json, commonly:
 npm run dev
-4. Configure the recommendation service
+
+6. Configure the recommendation service
 If the Python recommendation engine is a separate service, create and
 activate a virtual environment, then install the dependencies used by
 the project.
@@ -167,6 +185,7 @@ Start the service using its actual entry-point file and configured port.
 For example, if it is a Flask application:
 python app.py
 Adjust the command and dependencies to match your implementation.
+
 🔐 Security Notes
 - Keep Stripe secret keys, Clerk secret keys, database credentials,
   and SMTP passwords out of source control.
@@ -177,6 +196,7 @@ Adjust the command and dependencies to match your implementation.
 - Verify Stripe webhook signatures if webhooks are used.
 - Store environment files in .gitignore and provide a sanitized
   .env.example instead.
+  
 🧪 Testing Checklist
 - [ ] User sign-up, sign-in, and sign-out.
 - [ ] User and admin permission checks.
@@ -187,6 +207,7 @@ Adjust the command and dependencies to match your implementation.
 - [ ] Email delivery and error handling.
 - [ ] Recommendation service response.
 - [ ] Responsive layout on desktop and mobile.
+- [ ] 
 🌟 Future Enhancements
 - Movie ratings and reviews.
 - Booking history and ticket cancellation.
@@ -194,9 +215,11 @@ Adjust the command and dependencies to match your implementation.
 - More advanced recommendation models.
 - Real-time seat updates across concurrent users.
 - Automated tests and CI/CD deployment.
+- 
 👨‍💻 Author
 Mohit Kumar
 - GitHub: @Mohitkr09
+- 
 📄 License
 No license is specified in this README. Add a LICENSE file if you want
 to define how others may use, modify, and distribute the project.
