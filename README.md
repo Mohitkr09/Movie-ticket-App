@@ -207,7 +207,7 @@ Adjust the command and dependencies to match your implementation.
 - [ ] Email delivery and error handling.
 - [ ] Recommendation service response.
 - [ ] Responsive layout on desktop and mobile.
-- [ ] 
+
 🌟 Future Enhancements
 - Movie ratings and reviews.
 - Booking history and ticket cancellation.
@@ -215,11 +215,13 @@ Adjust the command and dependencies to match your implementation.
 - More advanced recommendation models.
 - Real-time seat updates across concurrent users.
 - Automated tests and CI/CD deployment.
-- 
+  
+  Deployed Link: https://movie-ticket-app-radp.vercel.app/
+  
 👨‍💻 Author
 Mohit Kumar
 - GitHub: @Mohitkr09
-- 
+  
 📄 License
 No license is specified in this README. Add a LICENSE file if you want
 to define how others may use, modify, and distribute the project.
